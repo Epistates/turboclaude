@@ -172,7 +172,7 @@ async fn test_error_handling_unauthorized() {
             || err_str.contains("401")
             || err_str.contains("invalid"),
         "Expected error message to contain auth/401/invalid indicator, got: {}",
-        err.to_string()
+        err
     );
 }
 

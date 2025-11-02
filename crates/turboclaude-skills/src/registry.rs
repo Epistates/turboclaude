@@ -192,13 +192,15 @@ impl SkillRegistryBuilder {
 async fn discover_in_dir(dir: &PathBuf) -> Result<Vec<Skill>> {
     if !dir.exists() {
         return Err(SkillError::invalid_directory(format!(
-            "Directory does not exist: {dir:?}"
+            "Directory does not exist: {}",
+            dir.display()
         )));
     }
 
     if !dir.is_dir() {
         return Err(SkillError::invalid_directory(format!(
-            "Not a directory: {dir:?}"
+            "Not a directory: {}",
+            dir.display()
         )));
     }
 
@@ -221,7 +223,7 @@ async fn discover_in_dir(dir: &PathBuf) -> Result<Vec<Skill>> {
                 }
                 Err(e) => {
                     // Log error but continue discovering other skills
-                    eprintln!("Warning: Failed to load skill from {path:?}: {e}");
+                    eprintln!("Warning: Failed to load skill from {}: {e}", path.display());
                 }
             }
         }
@@ -273,7 +275,7 @@ mod tests {
         let hidden = temp_dir.path().join(".hidden");
         std::fs::create_dir(&hidden).unwrap();
 
-        for entry in WalkDir::new(temp_dir.path()).into_iter() {
+        for entry in WalkDir::new(temp_dir.path()) {
             let entry = entry.unwrap();
             if entry.file_name() == ".hidden" {
                 assert!(is_hidden(&entry));

@@ -4418,9 +4418,9 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tracing",
- "turbomcp-client 2.1.1",
- "turbomcp-protocol 2.1.1",
- "turbomcp-transport 2.1.1",
+ "turbomcp-client 2.1.2",
+ "turbomcp-protocol 2.1.2",
+ "turbomcp-transport 2.1.2",
  "uuid",
 ]
 
@@ -4532,7 +4532,7 @@ dependencies = [
 
 [[package]]
 name = "turbomcp-client"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4543,8 +4543,8 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "tracing",
- "turbomcp-protocol 2.1.1",
- "turbomcp-transport 2.1.1",
+ "turbomcp-protocol 2.1.2",
+ "turbomcp-transport 2.1.2",
  "uuid",
 ]
 
@@ -4584,7 +4584,7 @@ dependencies = [
 
 [[package]]
 name = "turbomcp-protocol"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "ahash",
  "arc-swap",
@@ -4645,7 +4645,7 @@ dependencies = [
 
 [[package]]
 name = "turbomcp-transport"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "ahash",
  "anyhow",
@@ -4666,7 +4666,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "turbomcp-protocol 2.1.1",
+ "turbomcp-protocol 2.1.2",
  "url",
  "uuid",
 ]

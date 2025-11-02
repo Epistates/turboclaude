@@ -73,6 +73,7 @@ impl SkillMatcher for KeywordMatcher {
 mod tests {
     use super::*;
     use crate::skill::SkillMetadata;
+    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -87,8 +88,8 @@ mod tests {
             },
             content: String::new(),
             root: PathBuf::from("/test"),
-            references: Default::default(),
-            scripts: Default::default(),
+            references: OnceCell::default(),
+            scripts: OnceCell::default(),
         }
     }
 

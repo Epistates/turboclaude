@@ -32,6 +32,7 @@ use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::{Duration, Instant};
+use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 
 /// Validates script paths to prevent directory traversal attacks
@@ -282,8 +283,6 @@ impl ScriptExecutor for PythonExecutor {
 
         // Manually capture stdout/stderr while monitoring for timeout
         // We need to read output concurrently to avoid deadlocks
-        use tokio::io::AsyncReadExt;
-
         let mut stdout_handle = child.stdout.take().unwrap();
         let mut stderr_handle = child.stderr.take().unwrap();
 
@@ -454,8 +453,6 @@ impl ScriptExecutor for BashExecutor {
 
         // Manually capture stdout/stderr while monitoring for timeout
         // We need to read output concurrently to avoid deadlocks
-        use tokio::io::AsyncReadExt;
-
         let mut stdout_handle = child.stdout.take().unwrap();
         let mut stderr_handle = child.stderr.take().unwrap();
 
