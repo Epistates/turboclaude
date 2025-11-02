@@ -535,8 +535,6 @@ See [LICENSE](LICENSE) and [DISCLAIMER.md](DISCLAIMER.md) for full details.
 
 This is an **unofficial, community-maintained SDK**. It is not created, maintained, or endorsed by Anthropic. For official SDKs, please visit [Anthropic's documentation](https://docs.anthropic.com/).
 
-The maintainer ([epistates](https://github.com/epistates)) has implemented this SDK to provide Rust developers with a production-ready client for Claude API with full feature parity to the official Python SDK.
-
 ---
 
 ## ✅ Production Ready
