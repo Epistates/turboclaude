@@ -1,8 +1,8 @@
 //! Common test utilities and fixtures
 //!
-//! Uses best-in-class Rust testing libraries:
+//! Uses testing libraries:
 //! - rstest for fixtures (matches Python's pytest fixtures)
-//! - wiremock for HTTP mocking (isolated, parallel-safe)
+//! - wiremock for HTTP mocking
 //! - #[tokio::test] for async testing
 //! - insta for snapshot testing
 

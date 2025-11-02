@@ -9,9 +9,9 @@ This directory contains end-to-end tests that make **real API calls to Claude** 
 ### Prerequisites
 
 1. **API Key Required**: Set `ANTHROPIC_API_KEY` environment variable:
-   ```bash
-   export ANTHROPIC_API_KEY=your-key-here
-   ```
+ ```bash
+ export ANTHROPIC_API_KEY=your-key-here
+ ```
 
 2. **Cost Warning**: These tests make real API calls and will consume API credits. Run sparingly.
 
@@ -44,7 +44,7 @@ Tests runtime configuration changes:
 - `test_set_model`: Switch between Claude models dynamically
 - `test_interrupt`: Send interrupt signals
 
-**Python Parity**: ✅ Complete parity with `test_dynamic_control.py`
+**Python Parity**: Complete parity with `test_dynamic_control.py`
 
 ### 2. Hooks (`e2e_hooks.rs`)
 
@@ -53,14 +53,14 @@ Tests hook callback system:
 - `test_hook_with_continue_and_stop_reason`: PostToolUse hooks that halt execution
 - `test_hook_with_additional_context`: Hooks providing hookSpecificOutput
 
-**Python Parity**: ✅ Complete parity with `test_hooks.py`
+**Python Parity**: Complete parity with `test_hooks.py`
 
 ### 3. Tool Permissions (`e2e_tool_permissions.rs`)
 
 Tests tool permission callbacks:
 - `test_permission_callback_gets_called`: Verify can_use_tool invocation
 
-**Python Parity**: ✅ Complete parity with `test_tool_permissions.py`
+**Python Parity**: Complete parity with `test_tool_permissions.py`
 
 ### 4. Agents and Settings (`e2e_agents_and_settings.rs`)
 
@@ -70,7 +70,7 @@ Tests agent configuration:
 - `test_setting_sources_user_only`: User-only setting sources
 - `test_setting_sources_project_included`: Project setting sources
 
-**Python Parity**: ✅ Complete parity with `test_agents_and_settings.py`
+**Python Parity**: Complete parity with `test_agents_and_settings.py`
 
 ## Infrastructure
 
@@ -92,13 +92,13 @@ Tests agent configuration:
 
 | Python E2E Test | Rust E2E Test | Status |
 |----------------|---------------|--------|
-| `test_dynamic_control.py` | `e2e_dynamic_control.rs` | ✅ Parity |
-| `test_hooks.py` | `e2e_hooks.rs` | ✅ Parity |
-| `test_tool_permissions.py` | `e2e_tool_permissions.rs` | ✅ Parity |
-| `test_agents_and_settings.py` | `e2e_agents_and_settings.rs` | ✅ Parity |
-| `test_stderr_callback.py` | ⚠️ TODO | Not implemented |
-| `test_sdk_mcp_tools.py` | ⚠️ TODO | Not implemented |
-| `test_include_partial_messages.py` | ⚠️ TODO | Not implemented |
+| `test_dynamic_control.py` | `e2e_dynamic_control.rs` | Parity |
+| `test_hooks.py` | `e2e_hooks.rs` | Parity |
+| `test_tool_permissions.py` | `e2e_tool_permissions.rs` | Parity |
+| `test_agents_and_settings.py` | `e2e_agents_and_settings.rs` | Parity |
+| `test_stderr_callback.py` | ️ TODO | Not implemented |
+| `test_sdk_mcp_tools.py` | ️ TODO | Not implemented |
+| `test_include_partial_messages.py` | ️ TODO | Not implemented |
 
 ## Test Development Guidelines
 
@@ -118,19 +118,19 @@ use super::common::*;
 
 #[tokio::test]
 async fn test_example_scenario() {
-    require_api_key();
+ require_api_key();
 
-    let config = SessionConfig::default();
-    let mut session = AgentSession::new(config).await.unwrap();
+ let config = SessionConfig::default();
+ let mut session = AgentSession::new(config).await.unwrap();
 
-    session.query("Simple test query").await.unwrap();
+ session.query("Simple test query").await.unwrap();
 
-    while let Some(message) = session.receive_response().await {
-        println!("Got message: {:?}", message);
-    }
+ while let Some(message) = session.receive_response().await {
+ println!("Got message: {:?}", message);
+ }
 
-    // Minimal assertion - just verify it worked
-    assert!(session.is_complete());
+ // Minimal assertion - just verify it worked
+ assert!(session.is_complete());
 }
 ```
 
@@ -139,20 +139,20 @@ async fn test_example_scenario() {
 ### Common Issues
 
 1. **API Key Not Found**
-   - Error: Test skipped or panics
-   - Fix: `export ANTHROPIC_API_KEY=your-key`
+ - Error: Test skipped or panics
+ - Fix: `export ANTHROPIC_API_KEY=your-key`
 
 2. **Subprocess Spawn Failure**
-   - Error: "Failed to spawn subprocess"
-   - Fix: Ensure Claude CLI is installed and in PATH
+ - Error: "Failed to spawn subprocess"
+ - Fix: Ensure Claude CLI is installed and in PATH
 
 3. **Timeout**
-   - Error: Test hangs
-   - Fix: Check API rate limits, network connectivity
+ - Error: Test hangs
+ - Fix: Check API rate limits, network connectivity
 
 4. **Flaky Tests**
-   - Issue: Non-deterministic Claude responses
-   - Fix: Reduce assertions to structural checks, not content
+ - Issue: Non-deterministic Claude responses
+ - Fix: Reduce assertions to structural checks, not content
 
 ### Verbose Output
 

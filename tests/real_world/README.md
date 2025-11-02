@@ -4,7 +4,7 @@
 
 This directory contains real-world integration tests that make actual API calls to Anthropic's Claude API. These tests validate that TurboClaude works correctly in production scenarios, beyond unit tests with mocked responses.
 
-## ⚠️ Important Notes
+## ️ Important Notes
 
 - **These tests use your actual API key** and will make real API calls
 - **Tests cost money** (~$0.50-$1.00 per full run, see cost breakdown below)
@@ -37,9 +37,9 @@ cargo test --ignored real_world -- --nocapture
 cargo test --ignored real_world -- --test-threads=1 --nocapture
 ```
 
-##  Test Categories
+## Test Categories
 
-### ✅ Implemented & Working
+### Implemented & Working
 
 #### 1. Messages API (`tests/real_world/messages.rs`)
 
@@ -104,7 +104,7 @@ cargo test --ignored real_world_errors -- --nocapture
 
 **Estimated cost**: ~$0.05 (most tests fail quickly before using tokens)
 
-### 🚧 Draft/TODO
+### Draft/TODO
 
 The following test suites have been created but require type/API fixes before they can be enabled:
 
@@ -156,17 +156,17 @@ Shared test infrastructure:
 ```rust
 /// Test configuration from environment
 pub struct TestConfig {
-    pub api_key: String,
+ pub api_key: String,
 }
 
 /// Metrics collection for test runs
 pub struct TestMetrics {
-    pub start_time: Option<Instant>,
-    pub input_tokens: u32,
-    pub output_tokens: u32,
-    pub cache_creation_tokens: u32,
-    pub cache_read_tokens: u32,
-    pub event_count: usize,
+ pub start_time: Option<Instant>,
+ pub input_tokens: u32,
+ pub output_tokens: u32,
+ pub cache_creation_tokens: u32,
+ pub cache_read_tokens: u32,
+ pub event_count: usize,
 }
 ```
 
@@ -176,26 +176,26 @@ All tests follow this pattern:
 
 ```rust
 #[tokio::test]
-#[ignore]  // Prevent accidental execution
+#[ignore] // Prevent accidental execution
 async fn real_world_test_name() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Load config
-    let config = TestConfig::from_env()?;
-    let client = Client::new(&config.api_key);
-    let mut metrics = TestMetrics::new();
+ // 1. Load config
+ let config = TestConfig::from_env()?;
+ let client = Client::new(&config.api_key);
+ let mut metrics = TestMetrics::new();
 
-    // 2. Execute test
-    println!("\n🧪 Testing: Description");
-    let response = client.messages().create(...).await?;
+ // 2. Execute test
+ println!("\n Testing: Description");
+ let response = client.messages().create(...).await?;
 
-    // 3. Validate response
-    assert!(...);
-    println!("✅ Validation passed");
+ // 3. Validate response
+ assert!(...);
+ println!(" Validation passed");
 
-    // 4. Report metrics
-    metrics.finish();
-    metrics.print_summary();
+ // 4. Report metrics
+ metrics.finish();
+ metrics.print_summary();
 
-    Ok(())
+ Ok(())
 }
 ```
 
@@ -249,21 +249,21 @@ tokio::time::sleep(Duration::from_secs(1)).await;
 # .github/workflows/real-world-tests.yml
 name: Real World Tests
 on:
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday
-  workflow_dispatch:      # Manual trigger
+ schedule:
+ - cron: '0 0 * * 0' # Weekly on Sunday
+ workflow_dispatch: # Manual trigger
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-      - name: Run real-world tests
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          cargo test --ignored real_world -- --test-threads=1
+ test:
+ runs-on: ubuntu-latest
+ steps:
+ - uses: actions/checkout@v3
+ - uses: actions-rs/toolchain@v1
+ - name: Run real-world tests
+ env:
+ ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+ run: |
+ cargo test --ignored real_world -- --test-threads=1
 ```
 
 **Option 2: Pre-Release Verification**
@@ -309,9 +309,9 @@ Or add delays in test code.
 Increase timeout in client builder:
 ```rust
 let client = Client::builder()
-    .api_key(&api_key)
-    .timeout(Duration::from_secs(30))  // Increase from default
-    .build()?;
+ .api_key(&api_key)
+ .timeout(Duration::from_secs(30)) // Increase from default
+ .build()?;
 ```
 
 ## Metrics & Reporting
@@ -337,8 +337,8 @@ cargo test --ignored real_world -- --nocapture 2>&1 | tee test_results.txt
 
 Parse results:
 ```bash
-grep "✅" test_results.txt  # All validations
-grep "Input tokens" test_results.txt | awk '{sum+=$3} END {print sum}'  # Total tokens
+grep "" test_results.txt # All validations
+grep "Input tokens" test_results.txt | awk '{sum+=$3} END {print sum}' # Total tokens
 ```
 
 ## Contributing

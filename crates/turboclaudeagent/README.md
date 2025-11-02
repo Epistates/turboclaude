@@ -1,8 +1,8 @@
-# TurboClaude Agent - Agentic Framework for Claude
+# TurboClaude Agent Framework
 
-A comprehensive agent framework built on TurboClaude, enabling sophisticated AI agents with hooks, permissions, message routing, and skill integration.
+Agent framework built on TurboClaude for creating AI agents with message hooks, permissions, routing, and skill integration.
 
-## 📚 Documentation
+## Documentation
 
 - **[API Reference](./API_REFERENCE.md)** - Complete API documentation with examples
 - **[Performance Tuning](./PERFORMANCE_TUNING.md)** - Optimization guide and best practices
@@ -10,12 +10,12 @@ A comprehensive agent framework built on TurboClaude, enabling sophisticated AI 
 
 ## Features
 
-- **Agent Framework**: Complete client with routing and message parsing
-- **Hooks System**: Intercept and modify messages at key points
-- **Permissions**: Fine-grained control over agent capabilities
-- **Skills Integration**: Register and execute dynamic skills
-- **Message Routing**: Sophisticated message handling and filtering
-- **Session Management**: Maintain conversation state
+- Agent client with routing and message parsing
+- Message hooks for interception and modification
+- Permission system for capability control
+- Skills integration and execution
+- Message routing and filtering
+- Session management
 
 ## Quick Start
 
@@ -25,15 +25,15 @@ use turboclaude::types::MessageRequest;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let agent = Agent::builder()
-        .api_key("sk-ant-...")
-        .name("MyAgent")
-        .build()?;
+ let agent = Agent::builder()
+ .api_key("sk-ant-...")
+ .name("MyAgent")
+ .build()?;
 
-    let response = agent.query("What is 2+2?").await?;
-    println!("{}", response);
+ let response = agent.query("What is 2+2?").await?;
+ println!("{}", response);
 
-    Ok(())
+ Ok(())
 }
 ```
 
@@ -65,12 +65,12 @@ Dynamic skill registration and execution:
 
 ```
 turboclaudeagent
-├── client        (Agent client implementation)
-├── config        (Configuration builder)
-├── hooks         (Extensible hook system)
-├── permissions   (Permission control)
-├── routing       (Message routing logic)
-├── skills        (Skills integration)
+├── client (Agent client implementation)
+├── config (Configuration builder)
+├── hooks (Extensible hook system)
+├── permissions (Permission control)
+├── routing (Message routing logic)
+├── skills (Skills integration)
 └── message_parser (Advanced message parsing)
 ```
 
@@ -96,4 +96,4 @@ Full documentation: `cargo doc --open`
 
 ---
 
-**Part of TurboClaude** 🤖
+**Part of TurboClaude** 

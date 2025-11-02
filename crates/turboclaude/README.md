@@ -1,46 +1,47 @@
-# TurboClaude - Production-Grade Rust SDK for Anthropic Claude
+# TurboClaude Rust SDK
 
 [![Crates.io](https://img.shields.io/crates/v/turboclaude.svg)](https://crates.io/crates/turboclaude)
 [![Docs.rs](https://docs.rs/turboclaude/badge.svg)](https://docs.rs/turboclaude)
 [![License](https://img.shields.io/crates/l/turboclaude.svg)](LICENSE)
 
-**100% feature parity with the official Python SDK** — TurboClaude brings production-grade Claude API access to Rust with multi-cloud support (AWS Bedrock, Google Vertex AI), complete agent systems, and comprehensive tooling.
+Rust SDK for Anthropic's Claude API with support for multi-cloud providers (AWS Bedrock, Google Vertex AI), agent framework, and tool system.
 
 ## Features
 
-### 🌐 Multi-Cloud Support
-- **Anthropic Direct**: Use Claude via official API
-- **AWS Bedrock**: Access Claude models via Amazon Bedrock
-- **Google Vertex AI**: Access Claude models via Google Cloud
-- **Unified Interface**: Same `Client` API across all providers
+### Supported Providers
+- Anthropic (official API)
+- AWS Bedrock
+- Google Vertex AI
 
-### 🤖 Agentic Capabilities
-- **Built-in Agent Framework** (turboclaudeagent crate)
-- **Hooks System**: Intercept and modify messages
-- **Permissions System**: Control what agents can do
-- **Message Routing**: Sophisticated message handling
-- **Skills Framework**: Register and execute dynamic skills
-
-### 🛠️ Comprehensive Tooling
-- **Tool System**: Define and use custom tools
-- **Computer Use**: GUI interaction (beta)
-- **Bash Execution**: Shell command running (beta)
-- **Web Search**: Real-time information retrieval (beta)
-- **Code Execution**: Execute code safely (beta)
-
-### 💾 Advanced Features
-- **Streaming**: Real-time token streaming
-- **Prompt Caching**: Reduce API costs
-- **File Uploads**: Process documents and images
-- **Vision**: Claude 3.5 vision capabilities
-- **Memory API**: Persistent context across conversations (beta)
-
-### 📊 Beta APIs
-- Extended Thinking
-- Vision (citations)
-- Files API
+### API Coverage
+- Messages API with streaming
+- Batch processing
+- Tool use and function calling
+- Prompt caching
+- Document and PDF analysis
+- Vision capabilities
+- Token counting
 - Models API
-- Memory API (persistent context)
+
+### Agent Framework
+- Agent client and configuration
+- Message hooks and interception
+- Permission system
+- Message routing
+- Skills integration
+
+### Tools & Extensions
+- Custom tool definitions
+- Computer use (beta)
+- Bash execution (beta)
+- Web search (beta)
+- Code execution (beta)
+
+### Advanced Features
+- Real-time streaming
+- Prompt caching for cost reduction
+- Persistent memory (beta)
+- Extended thinking (beta)
 
 ## Quick Start
 
@@ -50,26 +51,26 @@ use turboclaude::types::{MessageRequest, Message};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create client (uses ANTHROPIC_API_KEY environment variable)
-    let client = Client::new("sk-ant-...");
+ // Create client (uses ANTHROPIC_API_KEY environment variable)
+ let client = Client::new("sk-ant-...");
 
-    // Send a message
-    let response = client.messages()
-        .create(MessageRequest::builder()
-            .model(turboclaude::types::Models::CLAUDE_SONNET_4_5)
-            .max_tokens(1024u32)
-            .messages(vec![Message::user("Hello, Claude!")])
-            .build()?)
-        .await?;
+ // Send a message
+ let response = client.messages()
+ .create(MessageRequest::builder()
+ .model(turboclaude::types::Models::CLAUDE_SONNET_4_5)
+ .max_tokens(1024u32)
+ .messages(vec![Message::user("Hello, Claude!")])
+ .build()?)
+ .await?;
 
-    // Print response
-    for content in response.content {
-        if let turboclaude::types::ContentBlock::Text { text, .. } = content {
-            println!("{}", text);
-        }
-    }
+ // Print response
+ for content in response.content {
+ if let turboclaude::types::ContentBlock::Text { text, .. } = content {
+ println!("{}", text);
+ }
+ }
 
-    Ok(())
+ Ok(())
 }
 ```
 
@@ -81,10 +82,10 @@ use turboclaude::{Client, providers::bedrock::BedrockHttpProvider};
 use std::sync::Arc;
 
 let provider = Arc::new(
-    BedrockHttpProvider::builder()
-        .region("us-east-1")
-        .build()
-        .await?
+ BedrockHttpProvider::builder()
+ .region("us-east-1")
+ .build()
+ .await?
 );
 
 let client = Client::from_provider(provider);
@@ -97,12 +98,12 @@ use turboclaude::{Client, providers::vertex::VertexHttpProvider};
 use std::sync::Arc;
 
 let provider = Arc::new(
-    VertexHttpProvider::builder()
-        .project_id("my-gcp-project")
-        .region("us-east5")
-        .access_token(token)
-        .build()
-        .await?
+ VertexHttpProvider::builder()
+ .project_id("my-gcp-project")
+ .region("us-east5")
+ .access_token(token)
+ .build()
+ .await?
 );
 
 let client = Client::from_provider(provider);
@@ -183,7 +184,7 @@ TurboClaude is optimized for production:
 
 ## Status
 
-✅ **Production Ready** — All tests passing, comprehensive feature coverage, suitable for production use.
+v0.1.0 - All tests passing. See main README for test results.
 
 ## License
 
@@ -199,4 +200,4 @@ For issues and feature requests, see the GitHub repository.
 
 ---
 
-**Part of the TurboClaude Rust Ecosystem** 🦀
+**Part of the TurboClaude Rust Ecosystem** 

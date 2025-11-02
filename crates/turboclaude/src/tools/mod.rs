@@ -1,7 +1,6 @@
 //! Tool system for Anthropic SDK
 //!
-//! This module provides a powerful tool system similar to the Python SDK's tool helpers,
-//! allowing for automatic tool execution loops and schema generation.
+//! Provides tool system with automatic tool execution loops and schema generation.
 //!
 //! # Features
 //!

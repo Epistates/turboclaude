@@ -1,13 +1,10 @@
-//! # Anthropic Rust SDK
+//! # TurboClaude SDK
 //!
-//! A fully-featured, idiomatic Rust SDK for Anthropic's Claude API.
-//!
-//! This SDK provides complete feature parity with the official Python SDK,
-//! including support for:
-//! - Messages API (with streaming)
+//! Rust SDK for Anthropic's Claude API supporting:
+//! - Messages API with streaming
 //! - Batch processing
-//! - Tool use
-//! - Beta features
+//! - Tool use and function calling
+//! - Multi-cloud providers (Anthropic, AWS Bedrock, Google Vertex AI)
 //! - Multiple authentication methods
 //! - Automatic retries and rate limiting
 //!

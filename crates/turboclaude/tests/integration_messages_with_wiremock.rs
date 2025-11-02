@@ -1,10 +1,6 @@
 //! Integration tests for Messages API using wiremock
 //!
-//! This demonstrates best-in-class Rust testing practices:
-//! - HTTP mocking with wiremock (no Python dependencies)
-//! - Fixture-based testing
-//! - Comprehensive test coverage
-//! - Property-based testing with proptest
+//! Uses HTTP mocking with wiremock, fixture-based testing, and property-based testing with proptest
 
 mod common;
 

@@ -1,12 +1,12 @@
 # TurboClaude
 
-**⚠️ UNOFFICIAL SDK** - This is an unofficial, community-maintained Rust SDK for Anthropic's Claude API. It is not affiliated with or endorsed by Anthropic.
+**UNOFFICIAL SDK** - This is an unofficial, community-maintained Rust SDK for Anthropic's Claude API. It is not affiliated with or endorsed by Anthropic.
 
 **Maintained by:** [epistates](https://github.com/epistates)
 
-A fully-featured, idiomatic Rust SDK for Anthropic's Claude API with complete feature parity to the official Python SDK.
+Rust SDK for Anthropic's Claude API that covers the same features as the official Python SDK.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Add to your Cargo.toml
@@ -20,9 +20,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 cargo run --example basic
 ```
 
-See `examples/` directory for comprehensive usage patterns.
+See `examples/` directory for usage examples.
 
-## 📚 Which Crate Do I Need?
+## Which Crate Do I Need?
 
 Coming from Python? Here's the mapping to find the right TurboClaude crate:
 
@@ -66,17 +66,16 @@ turboclaudeagent = "0.1"
 turboclaude-skills = "0.1"
 ```
 
-## 🎯 Design Philosophy
+## Architecture Goals
 
-This SDK is designed to provide a Rust-native experience while maintaining feature parity with the official Python SDK. Our architecture decisions prioritize:
+The SDK follows these design principles:
 
-1. **Type Safety**: Leveraging Rust's type system for compile-time guarantees
+1. **Type Safety**: Use Rust's type system for compile-time guarantees
 2. **Performance**: Zero-cost abstractions and efficient streaming
-3. **Ergonomics**: Intuitive API that feels natural to Rust developers
-4. **Compatibility**: Feature parity with the Python SDK
-5. **Extensibility**: Easy integration with MCP and other protocols
+3. **Compatibility**: Support the same features as the official Python SDK
+4. **Extensibility**: Support integration with MCP and other protocols
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Design Decisions
 
@@ -217,7 +216,7 @@ let client = Client::builder()
 }
 ```
 
-## 📦 Module Structure
+## Module Structure
 
 ```
 src/
@@ -240,7 +239,7 @@ src/
 └── streaming.rs        # SSE streaming support
 ```
 
-## 🔄 Key Trade-offs
+## Key Trade-offs
 
 ### 1. **No Sync/Async Duplication**
 - **Pro**: Cleaner codebase, easier maintenance
@@ -262,7 +261,7 @@ src/
 - **Con**: More verbose than dynamic languages
 - **Benefit**: Catches errors before runtime
 
-## 🚀 Usage Examples
+## Usage Examples
 
 ### Basic Message Creation
 ```rust
@@ -499,9 +498,9 @@ let model = client.models().with_raw_response().get(Models::CLAUDE_SONNET_4_5).a
 5. **Audit Trails** - Save complete request metadata to database
 6. **Custom Headers** - Access any custom headers from responses
 
-See `examples/response_headers.rs` for comprehensive usage patterns.
+See `examples/response_headers.rs` for usage examples.
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 1. **Code Generation from OpenAPI**
    - Automated type generation via build.rs
@@ -511,7 +510,7 @@ See `examples/response_headers.rs` for comprehensive usage patterns.
    - WebSocket support
    - Multiplexed streams with unified backpressure handling
 
-## 🤝 Contributing
+## Contributing
 
 This SDK follows Rust best practices:
 - `cargo fmt` for formatting
@@ -519,55 +518,45 @@ This SDK follows Rust best practices:
 - `cargo test` for testing
 - `cargo doc` for documentation
 
-## 📄 License
+## License
 
 MIT License
 
 See [LICENSE](LICENSE) and [DISCLAIMER.md](DISCLAIMER.md) for full details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- Anthropic for the Claude API and official Python SDK (used as reference for feature parity)
+- Anthropic for the Claude API and official Python SDK
 - TurboMCP team for excellent MCP implementation
 - Rust async ecosystem (tokio, futures, tower)
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 This is an **unofficial, community-maintained SDK**. It is not created, maintained, or endorsed by Anthropic. For official SDKs, please visit [Anthropic's documentation](https://docs.anthropic.com/).
 
 ---
 
-## ✅ Production Ready
+## Status
 
-**Status:** Production-ready v0.1.0 - **100% Feature & Test Parity** with Python SDK
+v0.1.0 - All tests passing (172 tests total: 40 library, 132 integration, 15 doctests)
 
-### Test Results
-```
-✅ Library tests:     40 passed, 0 failed
-✅ Integration tests: 132 passed, 0 failed
-✅ Total:             172 tests passing (100%)
-✅ Warnings:          0
-✅ Documentation:     15 doctests passing
-```
+### Implemented Features
+- Messages API with streaming
+- Batch processing API
+- Tool use with automatic execution loops
+- Prompt caching
+- Document and PDF analysis
+- Raw response mode with headers and metadata
+- Token counting
+- Models API
+- Error handling with context
+- Automatic retries with exponential backoff
+- Rate limit handling
+- Model Context Protocol integration
+- Optional SIMD JSON parsing
 
-### What's Implemented
-- ✅ **Messages API** - Complete with streaming support
-- ✅ **Batch Processing** - Full batch API implementation
-- ✅ **Tool Use** - Function tools with automatic execution loops (`ToolRunner`)
-- ✅ **Built-in Tools** - Memory tool with cache control
-- ✅ **Prompt Caching** - 90% cost reduction on cached tokens
-- ✅ **Document/PDF Analysis** - Base64, URL, and plain text support
-- ✅ **Raw Response Mode** - Access headers, rate limits, and metadata
-- ✅ **Token Counting** - Count tokens before API calls
-- ✅ **Models API** - List and get model information
-- ✅ **Error Handling** - Comprehensive error types with context
-- ✅ **Automatic Retries** - Configurable retry logic with exponential backoff
-- ✅ **Rate Limiting** - Built-in rate limit handling
-- ✅ **MCP Integration** - Full Model Context Protocol support with adapters, registry, and bridge
-- ✅ **Performance** - Optional SIMD JSON parsing (sonic-rs) for high-performance scenarios
-
-### Provider Support
-- ✅ **Anthropic API** (api.anthropic.com) - Production ready
-- ✅ **AWS Bedrock** - Fully implemented (see examples: `bedrock_basic.rs`, `bedrock_streaming.rs`)
-- ✅ **Google Vertex AI** - Fully implemented (see examples: `vertex_basic.rs`, `vertex_streaming.rs`)
+### Supported Providers
+- Anthropic API (api.anthropic.com)
+- AWS Bedrock (see examples: `bedrock_basic.rs`, `bedrock_streaming.rs`)
+- Google Vertex AI (see examples: `vertex_basic.rs`, `vertex_streaming.rs`)
 
