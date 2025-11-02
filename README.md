@@ -12,7 +12,15 @@ A fully-featured, idiomatic Rust SDK for Anthropic's Claude API with complete fe
 # Add to your Cargo.toml
 [dependencies]
 turboclaude = "0.1"
+
+# Set your API key
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Run an example
+cargo run --example basic
 ```
+
+See `examples/` directory for comprehensive usage patterns.
 
 ## 📚 Which Crate Do I Need?
 
@@ -515,23 +523,6 @@ See `examples/response_headers.rs` for comprehensive usage patterns.
    - SIMD JSON parsing (sonic-rs)
    - Zero-copy message handling
 
-## 📚 Comparison with Python SDK
-
-| Feature | Python SDK | Rust SDK | Notes |
-|---------|------------|----------|-------|
-| Async Support | ✅ AsyncAnthropic | ✅ Default async | Rust is async-first |
-| Sync Support | ✅ Anthropic | ✅ blocking feature | Optional in Rust |
-| Type Safety | 🟡 Runtime + type hints | ✅ Compile-time | Rust advantage |
-| Streaming | ✅ SSE | ✅ SSE | Same implementation |
-| Tool Use | ✅ | ✅ | Full support |
-| Batch API | ✅ | ✅ | Complete implementation |
-| Prompt Caching | ✅ | ✅ | Cost optimization feature |
-| Document/PDF Analysis | ✅ | ✅ | Base64, URL, and plain text |
-| **Raw Response Mode** | ✅ `with_raw_response` | ✅ `with_raw_response()` | **Complete parity - NEW!** |
-| Error Handling | Exceptions | Result<T, E> | Idiomatic for each language |
-| Middleware | ✅ httpx | ✅ Tower | Different but equivalent |
-| MCP Support | ❌ | ✅ Optional | Via TurboMCP |
-
 ## 🤝 Contributing
 
 This SDK follows Rust best practices:
@@ -592,18 +583,3 @@ The maintainer ([epistates](https://github.com/epistates)) has implemented this 
 - ⏳ **AWS Bedrock** - Not yet implemented (see `PROVIDER_SUPPORT_STATUS.md`)
 - ⏳ **Google Vertex AI** - Not yet implemented (see `PROVIDER_SUPPORT_STATUS.md`)
 
-### Quick Start
-
-```bash
-# Add to Cargo.toml
-[dependencies]
-turboclaude = "0.1"
-
-# Set your API key
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# Run an example
-cargo run --example basic
-```
-
-See `examples/` directory for comprehensive usage patterns.
