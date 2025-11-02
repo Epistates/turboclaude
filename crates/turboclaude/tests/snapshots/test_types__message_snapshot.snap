@@ -1,0 +1,31 @@
+---
+source: crates/turboclaude/tests/test_types.rs
+expression: message
+---
+{
+  "id": "msg_123",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Hello"
+    },
+    {
+      "type": "tool_use",
+      "id": "tool_1",
+      "name": "calculator",
+      "input": {
+        "a": 1,
+        "b": 2
+      }
+    }
+  ],
+  "model": "claude-sonnet-4-5-20250514",
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 10,
+    "output_tokens": 20
+  }
+}

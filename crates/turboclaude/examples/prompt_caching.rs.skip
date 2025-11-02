@@ -1,0 +1,108 @@
+//! Example: Using Prompt Caching
+//!
+//! Demonstrates how to use prompt caching to reduce costs and latency
+//! by caching frequently-used parts of system prompts.
+//!
+//! Run with: cargo run --example prompt_caching
+
+use anthropic::{
+    types::{CacheTTL, Message, MessageRequest, Models, SystemPromptBlock},
+    Client,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize client
+    let client = Client::new(std::env::var("ANTHROPIC_API_KEY")?);
+
+    println!("=== Prompt Caching Example ===\n");
+
+    // Example 1: Simple string system prompt (no caching)
+    println!("1. Simple system prompt (no caching):");
+    let request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![Message::user("What can you help me with?")])
+        .system("You are a helpful assistant.")
+        .build()?;
+
+    println!("   System prompt: {:?}\n", request.system);
+
+    // Example 2: Cached system prompt with default TTL (5 minutes)
+    println!("2. Cached system prompt (default 5m TTL):");
+    let cached_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![Message::user("Analyze this code")])
+        .system(vec![SystemPromptBlock::text_cached(
+            "You are an expert code reviewer with deep knowledge of Rust, \
+                 Python, and best practices. Your reviews are thorough, \
+                 constructive, and educational.",
+        )])
+        .build()?;
+
+    println!("   System prompt with cache: {:?}\n", cached_request.system);
+
+    // Example 3: Multiple system blocks with mixed caching
+    println!("3. Multiple system blocks (mix of cached and non-cached):");
+    let mixed_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![Message::user("Review my PR")])
+        .system(vec![
+            // Static context (cached for 1 hour)
+            SystemPromptBlock::text_cached_with_ttl(
+                "You are a senior software engineer. You review code for:\n\
+                 - Correctness and bugs\n\
+                 - Performance issues\n\
+                 - Security vulnerabilities\n\
+                 - Code style and best practices\n\
+                 - Test coverage",
+                CacheTTL::OneHour,
+            ),
+            // Repository-specific context (cached with default 5m)
+            SystemPromptBlock::text_cached(
+                "This codebase uses:\n\
+                 - Rust 1.75+\n\
+                 - Tokio for async runtime\n\
+                 - Serde for serialization\n\
+                 - Test-driven development\n\
+                 - Conventional commits",
+            ),
+            // Dynamic context (not cached - changes per request)
+            SystemPromptBlock::text("Current PR focus: Performance optimization of HTTP client"),
+        ])
+        .build()?;
+
+    println!("   System prompt blocks:");
+    if let Some(anthropic::types::SystemPrompt::Blocks(blocks)) = &mixed_request.system {
+        for (i, block) in blocks.iter().enumerate() {
+            match block {
+                SystemPromptBlock::Text { cache_control, .. } => match cache_control {
+                    Some(cache) => println!("   - Block {}: CACHED ({:?})", i + 1, cache),
+                    None => println!("   - Block {}: NOT CACHED", i + 1),
+                },
+            }
+        }
+    }
+
+    println!("\n=== Usage Statistics ===");
+    println!("When using prompt caching:");
+    println!("- First request: Full tokens charged (creates cache)");
+    println!("- Subsequent requests (within TTL): Reduced cost for cached tokens");
+    println!("- Cache read tokens are ~90% cheaper than regular input tokens");
+    println!("\nExample savings:");
+    println!("- 1000 token system prompt, 100 requests");
+    println!("- Without caching: 100,000 tokens @ $3/MTok = $0.30");
+    println!("- With caching: 1,000 + (99 × 1,000 × 0.1) = 10,900 tokens = $0.03");
+    println!("- Savings: 90%!");
+
+    println!("\n=== Best Practices ===");
+    println!("1. Cache static content (docs, guidelines, examples)");
+    println!("2. Use longer TTL (1h) for very stable content");
+    println!("3. Keep dynamic content uncached (per-request context)");
+    println!("4. Structure system prompt: cached → semi-cached → dynamic");
+    println!("5. Monitor cache_creation_input_tokens in usage stats");
+
+    Ok(())
+}

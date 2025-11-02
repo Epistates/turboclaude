@@ -1,0 +1,203 @@
+//! Example demonstrating the AUTOMATED tool execution with ToolRunner
+//!
+//! This example shows how the ToolRunner eliminates 50-70% of boilerplate code
+//! compared to manual tool handling (see tools.rs for the manual approach).
+//!
+//! Run with: cargo run --example tool_runner --features schema
+
+use anthropic::{Client, Message, MessageRequest, Models};
+
+// Tool imports - this is the new automated system!
+#[cfg(feature = "schema")]
+use anthropic::tools::{FunctionTool, ToolRunner};
+
+#[cfg(feature = "schema")]
+use schemars::JsonSchema;
+use serde::Deserialize;
+
+// ============================================================================
+// STEP 1: Define your tool input types with automatic schema generation
+// ============================================================================
+
+#[cfg(feature = "schema")]
+#[derive(Debug, Deserialize, JsonSchema)]
+struct CalculatorInput {
+    /// The operation to perform
+    #[serde(rename = "operation")]
+    operation: String,
+
+    /// First number
+    a: f64,
+
+    /// Second number
+    b: f64,
+}
+
+#[cfg(feature = "schema")]
+#[derive(Debug, Deserialize, JsonSchema)]
+struct WeatherInput {
+    /// City name, e.g., "San Francisco, CA"
+    location: String,
+}
+
+// ============================================================================
+// STEP 2: Implement your tool functions (async functions that return Results)
+// ============================================================================
+
+#[cfg(feature = "schema")]
+async fn calculator(
+    input: CalculatorInput,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let result = match input.operation.as_str() {
+        "add" => input.a + input.b,
+        "subtract" => input.a - input.b,
+        "multiply" => input.a * input.b,
+        "divide" => {
+            if input.b == 0.0 {
+                return Err("Division by zero".into());
+            }
+            input.a / input.b
+        }
+        _ => return Err(format!("Unknown operation: {}", input.operation).into()),
+    };
+
+    Ok(format!(
+        "{} {} {} = {}",
+        input.a, input.operation, input.b, result
+    ))
+}
+
+#[cfg(feature = "schema")]
+async fn get_weather(
+    input: WeatherInput,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    // In a real application, you would call a weather API here
+    // For this demo, we'll just return mock data
+    Ok(format!(
+        "Weather in {}: Sunny, 72°F (22°C), Humidity: 45%",
+        input.location
+    ))
+}
+
+#[cfg(feature = "schema")]
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let separator = "=".repeat(80);
+    println!("{}", separator);
+    println!("AUTOMATED TOOL EXECUTION WITH TOOLRUNNER");
+    println!("{}", separator);
+    println!();
+
+    // Create client
+    let client = Client::builder()
+        .api_key("sk-ant-api-key") // Replace with your actual API key
+        .build()?;
+
+    // ========================================================================
+    // STEP 3: Create FunctionTools with automatic schema generation!
+    // ========================================================================
+
+    let calculator_tool = FunctionTool::new(
+        "calculator",
+        "Performs basic arithmetic operations (add, subtract, multiply, divide)",
+        calculator,
+    );
+
+    let weather_tool = FunctionTool::new(
+        "get_weather",
+        "Gets the current weather for a location",
+        get_weather,
+    );
+
+    // ========================================================================
+    // STEP 4: Create ToolRunner and register tools
+    // ========================================================================
+
+    let runner = ToolRunner::new(client)
+        .add_tool(calculator_tool)
+        .add_tool(weather_tool)
+        .with_max_iterations(5) // Limit loops to prevent infinite execution
+        .with_verbose(true); // Enable logging
+
+    println!("✓ Registered {} tools", runner.tool_count());
+    println!("  Tools: {:?}", runner.tool_names());
+    println!();
+
+    // ========================================================================
+    // STEP 5: Create your request (same as before)
+    // ========================================================================
+
+    let request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![Message::user(
+            "What is 42 multiplied by 17? Also, what's the weather like in Paris?",
+        )])
+        .build()?;
+
+    println!("📤 Sending request to Claude...");
+    println!();
+
+    // ========================================================================
+    // STEP 6: THE MAGIC - ToolRunner handles EVERYTHING automatically!
+    // ========================================================================
+    //
+    // Compare this to tools.rs example which requires:
+    // - Manual tool execution checking (20+ lines)
+    // - Manual result formatting (10+ lines)
+    // - Manual follow-up message construction (15+ lines)
+    // - Manual loop handling (5+ lines)
+    //
+    // With ToolRunner: ONE LINE! ✨
+    //
+    let final_message = runner.run(request).await?;
+
+    // ========================================================================
+    // STEP 7: Get your final result!
+    // ========================================================================
+
+    println!();
+    println!("{}", separator);
+    println!("📥 FINAL RESPONSE FROM CLAUDE:");
+    println!("{}", separator);
+    println!();
+    println!("{}", final_message.text());
+    println!();
+
+    println!("📊 Token Usage:");
+    println!("  Input tokens:  {}", final_message.usage.input_tokens);
+    println!("  Output tokens: {}", final_message.usage.output_tokens);
+    println!(
+        "  Total tokens:  {}",
+        final_message.usage.input_tokens + final_message.usage.output_tokens
+    );
+
+    if let Some(cache_read) = final_message.usage.cache_read_input_tokens {
+        println!("  Cache read:    {}", cache_read);
+    }
+    if let Some(cache_created) = final_message.usage.cache_creation_input_tokens {
+        println!("  Cache created: {}", cache_created);
+    }
+
+    println!();
+    println!("✅ Tool execution loop completed automatically!");
+    println!();
+    println!("{}", separator);
+    println!("CODE COMPARISON:");
+    println!("{}", separator);
+    println!();
+    println!("Manual approach (tools.rs):  ~100 lines of tool handling code");
+    println!("Automated approach (this):   1 line: runner.run(request).await?");
+    println!();
+    println!("Code reduction: ~70%! 🎉");
+    println!("{}", separator);
+
+    Ok(())
+}
+
+#[cfg(not(feature = "schema"))]
+fn main() {
+    eprintln!("This example requires the 'schema' feature.");
+    eprintln!("Run with: cargo run --example tool_runner --features schema");
+    std::process::exit(1);
+}

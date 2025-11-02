@@ -1,0 +1,406 @@
+//! Integration tests for hook callbacks using MockTransport
+//!
+//! Tests hook registration, dispatching, and response handling in isolation
+//! without requiring a real Claude CLI subprocess.
+
+mod common;
+
+use common::mock_transport::MockTransport;
+use serde_json::json;
+use turboclaude_protocol::{HookRequest, HookResponse, ModifiedInputs, ProtocolMessage};
+use turboclaudeagent::hooks::HookRegistry;
+
+#[tokio::test]
+async fn test_hook_allows_continuation() {
+    // Test that a hook can allow execution to continue
+    let registry = HookRegistry::new();
+
+    // Register hook that allows continuation
+    registry
+        .register("PreToolUse", |req: HookRequest| {
+            Box::pin(async move {
+                assert_eq!(req.event_type, "PreToolUse");
+                Ok(HookResponse::continue_exec())
+            })
+        })
+        .await;
+
+    // Dispatch hook event
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({
+            "tool": "search",
+            "input": {"query": "test"}
+        }),
+    };
+
+    let response = registry.dispatch("PreToolUse", request).await.unwrap();
+
+    // Verify continuation is allowed
+    assert!(response.continue_);
+    assert!(response.modified_inputs.is_none());
+}
+
+#[tokio::test]
+async fn test_hook_denies_continuation() {
+    // Test that a hook can block execution
+    let registry = HookRegistry::new();
+
+    // Register hook that denies continuation
+    registry
+        .register("PreToolUse", |req: HookRequest| {
+            Box::pin(async move {
+                // Block dangerous tools
+                let tool = req.data.get("tool").and_then(|v| v.as_str()).unwrap();
+                let should_block = tool == "dangerous_tool";
+
+                {
+                    let mut resp = if should_block {
+                        HookResponse::stop()
+                    } else {
+                        HookResponse::continue_exec()
+                    };
+                    resp.context = Some(json!({
+                        "reason": if should_block { "Tool blocked" } else { "OK" }
+                    }));
+                    Ok(resp)
+                }
+            })
+        })
+        .await;
+
+    // Try dangerous tool
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({
+            "tool": "dangerous_tool",
+            "input": {}
+        }),
+    };
+
+    let response = registry.dispatch("PreToolUse", request).await.unwrap();
+
+    // Verify continuation is blocked
+    assert!(!response.continue_);
+    assert_eq!(response.context.unwrap()["reason"], "Tool blocked");
+}
+
+#[tokio::test]
+async fn test_hook_modifies_input() {
+    // Test that a hook can modify tool inputs
+    let registry = HookRegistry::new();
+
+    // Register hook that modifies inputs
+    registry
+        .register("PreToolUse", |req: HookRequest| {
+            Box::pin(async move {
+                // Extract original input
+                let tool_name = req.data.get("tool").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let mut input = req.data.get("input").cloned().unwrap_or(json!({}));
+
+                // Add safety parameter
+                if let Some(obj) = input.as_object_mut() {
+                    obj.insert("safe_mode".to_string(), json!(true));
+                }
+
+                {
+                    let mut resp = HookResponse::continue_exec();
+                    resp.modified_inputs = Some(ModifiedInputs {
+                        tool_name,
+                        input: Some(input),
+                    });
+                    Ok(resp)
+                }
+            })
+        })
+        .await;
+
+    // Dispatch hook event
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({
+            "tool": "write_file",
+            "input": {"path": "/tmp/file.txt"}
+        }),
+    };
+
+    let response = registry.dispatch("PreToolUse", request).await.unwrap();
+
+    // Verify input was modified
+    assert!(response.continue_);
+    let modified = response.modified_inputs.unwrap();
+    let input = modified.input.unwrap();
+    assert_eq!(input["safe_mode"], true);
+    assert_eq!(input["path"], "/tmp/file.txt");
+}
+
+#[tokio::test]
+async fn test_multiple_hooks_and_logic() {
+    // Test that multiple hooks use AND logic for continue
+    let registry = HookRegistry::new();
+
+    // First hook: allows
+    registry
+        .register("PreToolUse", |_req: HookRequest| {
+            Box::pin(async move {
+                Ok(HookResponse {
+                    continue_: true,
+                    modified_inputs: None,
+                    context: Some(json!({"hook1": "allowed"})),
+                })
+            })
+        })
+        .await;
+
+    // Second hook: denies
+    registry
+        .register("PreToolUse", |_req: HookRequest| {
+            Box::pin(async move {
+                Ok(HookResponse {
+                    continue_: false,
+                    modified_inputs: None,
+                    context: Some(json!({"hook2": "denied"})),
+                })
+            })
+        })
+        .await;
+
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({"tool": "test"}),
+    };
+
+    let response = registry.dispatch("PreToolUse", request).await.unwrap();
+
+    // Even though first hook allowed, second hook denies = overall deny
+    assert!(!response.continue_);
+}
+
+#[tokio::test]
+async fn test_hook_exception_handling() {
+    // Test that hook errors are propagated correctly
+    let registry = HookRegistry::new();
+
+    // Register hook that returns error
+    registry
+        .register("PreToolUse", |_req: HookRequest| {
+            Box::pin(async move {
+                Err(turboclaudeagent::error::AgentError::Config(
+                    "Hook error".to_string(),
+                ))
+            })
+        })
+        .await;
+
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({"tool": "test"}),
+    };
+
+    let result = registry.dispatch("PreToolUse", request).await;
+
+    // Verify error is returned
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Hook error"));
+}
+
+#[tokio::test]
+async fn test_hook_with_mock_transport() {
+    // Test transport integration with hooks
+    let transport = MockTransport::new();
+
+    // Queue a simple message
+    transport
+        .queue_response(json!({
+            "event_type": "PreToolUse",
+            "data": {
+                "tool": "search",
+                "input": {"query": "test"}
+            }
+        }))
+        .await;
+
+    // Simulate receiving the hook request
+    let msg = transport.recv_message().await.unwrap();
+    assert!(msg.is_some());
+
+    let msg_value = msg.unwrap();
+    assert_eq!(msg_value["event_type"], "PreToolUse");
+    assert_eq!(msg_value["data"]["tool"], "search");
+
+    // Parse as HookRequest (directly, without ProtocolMessage wrapper)
+    let hook_req: HookRequest = serde_json::from_value(msg_value).unwrap();
+    assert_eq!(hook_req.event_type, "PreToolUse");
+    assert_eq!(hook_req.data["tool"], "search");
+}
+
+#[tokio::test]
+async fn test_post_tool_use_hook() {
+    // Test PostToolUse hook event
+    let registry = HookRegistry::new();
+
+    // Register PostToolUse hook
+    registry
+        .register("PostToolUse", |req: HookRequest| {
+            Box::pin(async move {
+                // Verify tool completed
+                assert_eq!(req.event_type, "PostToolUse");
+                let result = req.data.get("result").unwrap();
+
+                Ok(HookResponse {
+                    continue_: true,
+                    modified_inputs: None,
+                    context: Some(json!({
+                        "observed": true,
+                        "result_type": result.get("type")
+                    })),
+                })
+            })
+        })
+        .await;
+
+    let request = HookRequest {
+        event_type: "PostToolUse".to_string(),
+        data: json!({
+            "tool": "search",
+            "result": {"type": "success", "data": "found"}
+        }),
+    };
+
+    let response = registry.dispatch("PostToolUse", request).await.unwrap();
+
+    assert!(response.continue_);
+    assert_eq!(response.context.unwrap()["observed"], true);
+}
+
+#[tokio::test]
+async fn test_hook_response_serialization() {
+    // Test that HookResponse serializes correctly for sending back to CLI
+    let mut response = HookResponse::continue_exec();
+    response.modified_inputs = Some(ModifiedInputs {
+        tool_name: Some("search".to_string()),
+        input: Some(json!({"query": "modified query"})),
+    });
+    response.context = Some(json!({"reason": "Modified for safety"}));
+
+    // Serialize to JSON
+    let json = serde_json::to_string(&response).unwrap();
+
+    // Verify continue field is renamed
+    assert!(json.contains(r#""continue":true"#));
+    assert!(json.contains("modified_inputs"));
+    assert!(json.contains("Modified for safety"));
+
+    // Verify roundtrip
+    let deserialized: HookResponse = serde_json::from_str(&json).unwrap();
+    assert_eq!(deserialized.continue_, true);
+    assert!(deserialized.modified_inputs.is_some());
+}
+
+#[tokio::test]
+async fn test_hook_dispatch_no_handlers() {
+    // Test that dispatch with no registered handlers returns continue=true
+    let registry = HookRegistry::new();
+
+    let request = HookRequest {
+        event_type: "UnknownEvent".to_string(),
+        data: json!({}),
+    };
+
+    let response = registry
+        .dispatch("UnknownEvent", request)
+        .await
+        .unwrap();
+
+    // No handlers = default allow
+    assert!(response.continue_);
+    assert!(response.modified_inputs.is_none());
+    assert!(response.context.is_none());
+}
+
+#[tokio::test]
+async fn test_hook_context_accumulation() {
+    // Test that multiple hooks accumulate context
+    let registry = HookRegistry::new();
+
+    // First hook
+    registry
+        .register("PreToolUse", |_req: HookRequest| {
+            Box::pin(async move {
+                Ok(HookResponse {
+                    continue_: true,
+                    modified_inputs: None,
+                    context: Some(json!({"step": 1, "data": "first"})),
+                })
+            })
+        })
+        .await;
+
+    // Second hook
+    registry
+        .register("PreToolUse", |_req: HookRequest| {
+            Box::pin(async move {
+                Ok(HookResponse {
+                    continue_: true,
+                    modified_inputs: None,
+                    context: Some(json!({"step": 2, "data": "second"})),
+                })
+            })
+        })
+        .await;
+
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({"tool": "test"}),
+    };
+
+    let response = registry.dispatch("PreToolUse", request).await.unwrap();
+
+    // Context should be accumulated (implementation-defined merge strategy)
+    assert!(response.context.is_some());
+}
+
+#[tokio::test]
+async fn test_hook_input_modification_chain() {
+    // Test that multiple hooks can chain input modifications
+    let registry = HookRegistry::new();
+
+    // First hook: add field
+    registry
+        .register("PreToolUse", |req: HookRequest| {
+            Box::pin(async move {
+                let tool_name = req.data.get("tool").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let mut input = req.data.get("input").cloned().unwrap_or(json!({}));
+
+                if let Some(obj) = input.as_object_mut() {
+                    obj.insert("step1".to_string(), json!(true));
+                }
+
+                {
+                    let mut resp = HookResponse::continue_exec();
+                    resp.modified_inputs = Some(ModifiedInputs {
+                        tool_name,
+                        input: Some(input),
+                    });
+                    Ok(resp)
+                }
+            })
+        })
+        .await;
+
+    let request = HookRequest {
+        event_type: "PreToolUse".to_string(),
+        data: json!({
+            "tool": "test",
+            "input": {"original": "data"}
+        }),
+    };
+
+    let response = registry.dispatch("PreToolUse", request).await.unwrap();
+
+    // Verify modification
+    let modified = response.modified_inputs.unwrap();
+    let input = modified.input.unwrap();
+    assert_eq!(input["step1"], true);
+    assert_eq!(input["original"], "data");
+}

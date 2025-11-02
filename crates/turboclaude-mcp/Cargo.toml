@@ -1,0 +1,52 @@
+[package]
+name = "turboclaude-mcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "SDK-agnostic MCP (Model Context Protocol) abstraction for turboclaude"
+documentation = "https://docs.rs/turboclaude-mcp"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# MCP protocol (for type definitions)
+turbomcp-protocol = { path = "../../../turbomcp/crates/turbomcp-protocol" }
+turbomcp-transport = { path = "../../../turbomcp/crates/turbomcp-transport" }
+
+# Optional: For TurboMCP adapter
+turbomcp-client = { path = "../../../turbomcp/crates/turbomcp-client", optional = true }
+
+# Optional: For Official Rust SDK adapter
+rmcp = { path = "../../../reference/rust-sdk/crates/rmcp", optional = true, features = ["client", "transport-child-process"] }
+
+# Futures for async trait support
+futures = "0.3"
+
+[dev-dependencies]
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+
+[features]
+default = ["turbomcp-adapter"]
+# Enable TurboMCP adapter support (default)
+turbomcp-adapter = ["turbomcp-client"]
+# Enable Official Rust SDK adapter support
+official-sdk-adapter = ["rmcp"]
+# Enable all adapters
+all-adapters = ["turbomcp-adapter", "official-sdk-adapter"]
+
+[[test]]
+name = "integration_trait"
+path = "tests/integration_trait.rs"

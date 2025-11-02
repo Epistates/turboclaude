@@ -1,0 +1,28 @@
+[package]
+name = "turboclaude-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core abstractions, traits, and utilities for the TurboClaude ecosystem"
+documentation = "https://docs.rs/turboclaude-core"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+async-trait = "0.1"
+tracing = { version = "0.1", optional = true }
+rand = "0.8"
+
+[dev-dependencies]
+tokio-test = "0.4"
+proptest = "1"
+toml = "0.8"
+
+[features]
+default = []
+tracing = ["dep:tracing"]

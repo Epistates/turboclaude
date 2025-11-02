@@ -1,0 +1,30 @@
+---
+source: tests/test_types.rs
+expression: request
+---
+{
+  "model": "claude-3-5-sonnet-20241022",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What is 2+2?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me calculate that."
+        }
+      ]
+    }
+  ],
+  "max_tokens": 1024,
+  "system": "You are a helpful calculator",
+  "temperature": 0.7
+}

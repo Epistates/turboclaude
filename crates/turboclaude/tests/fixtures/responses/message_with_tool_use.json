@@ -1,0 +1,28 @@
+{
+  "id": "msg_01TzXvJCfH4JjJKmZKw8Ayzx",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "I'll help you calculate that."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01T4cZHAFxMJDJTMdG4NxVQf",
+      "name": "calculator",
+      "input": {
+        "operation": "add",
+        "operand1": 5,
+        "operand2": 3
+      }
+    }
+  ],
+  "model": "claude-3-5-sonnet-20241022",
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 350,
+    "output_tokens": 120
+  }
+}

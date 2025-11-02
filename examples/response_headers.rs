@@ -1,0 +1,194 @@
+//! Example: Accessing Response Headers and HTTP Metadata
+//!
+//! Demonstrates how to use `with_raw_response()` to access HTTP headers,
+//! status codes, rate limits, and other metadata. This provides complete
+//! feature parity with the Python SDK's `with_raw_response` functionality.
+//!
+//! Run with: cargo run --example response_headers
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("=== Response Headers and Metadata Examples ===\n");
+
+    // Note: This example demonstrates the API without making actual requests
+    // It shows code patterns for accessing response headers and metadata
+
+    println!("1. Basic Usage - Accessing Response Metadata:");
+    println!("   Standard mode (parsed body only):");
+    println!("   ```rust");
+    println!("   let message = client.messages().create(request).await?;");
+    println!("   println!(\"Response: {{}}\", message.content.text());");
+    println!("   ```");
+    println!();
+
+    println!("   Raw response mode (body + headers + metadata):");
+    println!("   ```rust");
+    println!("   let raw = client.messages()");
+    println!("       .with_raw_response()");
+    println!("       .create(request)");
+    println!("       .await?;");
+    println!();
+    println!("   // Access HTTP metadata");
+    println!("   println!(\"Status: {{}}\", raw.status_code());");
+    println!("   println!(\"Request ID: {{:?}}\", raw.request_id());");
+    println!("   println!(\"Elapsed: {{:?}}\", raw.elapsed());");
+    println!();
+    println!("   // Access parsed response");
+    println!("   println!(\"Response: {{}}\", raw.parsed().content.text());");
+    println!("   ```");
+    println!();
+
+    println!("2. Rate Limiting - Monitor API Usage:");
+    println!("   ```rust");
+    println!("   let raw = client.messages().with_raw_response().create(request).await?;");
+    println!();
+    println!("   if let Some((limit, remaining, reset)) = raw.rate_limit_info() {{");
+    println!("       println!(\"Rate limit: {{remaining}}/{{limit}} remaining\");");
+    println!("       println!(\"Resets at: {{reset}}\");");
+    println!();
+    println!("       // Warn if approaching limit");
+    println!("       if remaining < 10 {{");
+    println!("           eprintln!(\"WARNING: Only {{}} requests remaining!\", remaining);");
+    println!("       }}");
+    println!("   }}");
+    println!("   ```");
+    println!();
+
+    println!("3. Request Tracking - Get Request IDs for Support:");
+    println!("   ```rust");
+    println!("   let raw = client.messages().with_raw_response().create(request).await?;");
+    println!();
+    println!("   if let Some(request_id) = raw.request_id() {{");
+    println!("       // Log for debugging/support");
+    println!("       log::info!(\"API request ID: {{}}\", request_id);");
+    println!();
+    println!("       // Save to database for audit trail");
+    println!("       db.save_request_log(user_id, request_id);");
+    println!("   }}");
+    println!("   ```");
+    println!();
+
+    println!("4. Performance Monitoring - Track Request Timing:");
+    println!("   ```rust");
+    println!("   let raw = client.messages().with_raw_response().create(request).await?;");
+    println!();
+    println!("   let elapsed = raw.elapsed();");
+    println!("   metrics.record_api_latency(elapsed);");
+    println!();
+    println!("   if elapsed.as_secs() > 5 {{");
+    println!("       warn!(\"Slow API response: {{:?}}\", elapsed);");
+    println!("   }}");
+    println!("   ```");
+    println!();
+
+    println!("5. Retry Tracking - Monitor Failed Requests:");
+    println!("   ```rust");
+    println!("   let raw = client.messages().with_raw_response().create(request).await?;");
+    println!();
+    println!("   let retries = raw.retries_taken();");
+    println!("   if retries > 0 {{");
+    println!("       println!(\"Request was retried {{}} times\", retries);");
+    println!("       metrics.increment_retry_count(retries);");
+    println!("   }}");
+    println!("   ```");
+    println!();
+
+    println!("6. Custom Headers - Access Any Header:");
+    println!("   ```rust");
+    println!("   let raw = client.messages().with_raw_response().create(request).await?;");
+    println!();
+    println!("   // Access specific headers");
+    println!("   if let Some(content_type) = raw.get_header(\"content-type\") {{");
+    println!("       println!(\"Content-Type: {{:?}}\", content_type);");
+    println!("   }}");
+    println!();
+    println!("   // Access all headers");
+    println!("   for (name, value) in raw.headers() {{");
+    println!("       println!(\"{{name}}: {{value:?}}\");");
+    println!("   }}");
+    println!("   ```");
+    println!();
+
+    println!("7. Works on All Endpoints:");
+    println!("   ```rust");
+    println!("   // Messages");
+    println!("   let msg = client.messages().with_raw_response().create(req).await?;");
+    println!();
+    println!("   // Token counting");
+    println!("   let tokens = client.messages().with_raw_response().count_tokens(req).await?;");
+    println!();
+    println!("   // Batches");
+    println!("   let batch = client.messages().with_raw_response().batches()");
+    println!("       .create(requests).await?;");
+    println!();
+    println!("   let batch = client.messages().with_raw_response().batches()");
+    println!("       .get(\"batch_id\").await?;");
+    println!();
+    println!("   // Models");
+    println!("   let models = client.models().with_raw_response().list().await?;");
+    println!("   let model = client.models().with_raw_response()");
+    println!("       .get(turboclaude::types::Models::CLAUDE_SONNET_4_5).await?;");
+    println!("   ```");
+    println!();
+
+    println!("8. Complete Example - Production-Ready Usage:");
+    println!("   ```rust");
+    println!("   use anthropic::{{Client, MessageRequest, Message, types::Models}};");
+    println!();
+    println!("   let client = Client::new(api_key);");
+    println!();
+    println!("   let request = MessageRequest::builder()");
+    println!("       .model(Models::CLAUDE_SONNET_4_5)");
+    println!("       .max_tokens(1024)");
+    println!("       .messages(vec![Message::user(\"Hello, Claude!\")])");
+    println!("       .build()?;");
+    println!();
+    println!("   let raw = client.messages()");
+    println!("       .with_raw_response()");
+    println!("       .create(request)");
+    println!("       .await?;");
+    println!();
+    println!("   // Log request metadata");
+    println!("   info!(");
+    println!("       \"API request completed\",");
+    println!("       request_id = raw.request_id(),");
+    println!("       status = raw.status_code(),");
+    println!("       elapsed_ms = raw.elapsed().as_millis(),");
+    println!("       retries = raw.retries_taken(),");
+    println!("   );");
+    println!();
+    println!("   // Check rate limits");
+    println!("   if let Some((limit, remaining, reset)) = raw.rate_limit_info() {{");
+    println!("       if remaining < limit / 10 {{  // Less than 10% remaining");
+    println!("           warn!(\"Approaching rate limit: {{}}/{{}}\", remaining, limit);");
+    println!("       }}");
+    println!("   }}");
+    println!();
+    println!("   // Use the response");
+    println!("   let message = raw.into_parsed();");
+    println!("   println!(\"Claude: {{}}\", message.content.text());");
+    println!("   ```");
+    println!();
+
+    println!("=== Key Benefits ===");
+    println!("1. Complete Python SDK parity - all response metadata accessible");
+    println!("2. Rate limit monitoring - avoid hitting API limits");
+    println!("3. Request tracking - log request IDs for support/debugging");
+    println!("4. Performance monitoring - track API latency");
+    println!("5. Retry visibility - see when requests were retried");
+    println!("6. Type-safe - compile-time guarantees for all operations");
+    println!("7. Zero overhead - only pay for what you use");
+    println!();
+
+    println!("=== Comparison with Python SDK ===");
+    println!("Python:                          Rust:");
+    println!("response.status_code        →    raw.status_code()");
+    println!("response.headers            →    raw.headers()");
+    println!("response.retries_taken      →    raw.retries_taken()");
+    println!("response.elapsed            →    raw.elapsed()");
+    println!("response.parse()            →    raw.parsed()");
+    println!("(Custom rate limit helper)  →    raw.rate_limit_info()");
+    println!("(Custom request ID helper)  →    raw.request_id()");
+
+    Ok(())
+}

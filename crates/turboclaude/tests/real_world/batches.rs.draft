@@ -1,0 +1,392 @@
+/// Real-world Batch API tests
+///
+/// Run with: cargo test --ignored real_world_batches
+/// Note: Batch processing can take several minutes
+
+use turboclaude::{Client, Message, MessageRequest};
+use turboclaude::resources::batches::{BatchRequest, ProcessingStatus};
+use crate::real_world::common::{TestConfig, TestMetrics};
+
+#[tokio::test]
+#[ignore]
+async fn real_world_batches_small() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Small batch (2 requests)");
+
+    // Create batch with 2 requests
+    let requests = vec![
+        MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .messages(vec![Message::user("What is 2+2?")])
+            .build()?,
+        MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .messages(vec![Message::user("What is 3+3?")])
+            .build()?,
+    ];
+
+    println!("📝 Creating batch with {} requests...", requests.len());
+    let batch = client.batches()
+        .create(BatchRequest { requests })
+        .await?;
+
+    println!("✅ Batch created: {}", batch.id);
+    println!("✅ Status: {:?}", batch.processing_status);
+
+    // Poll until complete
+    let timeout = std::time::Duration::from_secs(300); // 5 minutes
+    let poll_start = std::time::Instant::now();
+
+    println!("\n⏳ Polling for completion (max 5 minutes)...");
+    let final_status = loop {
+        if poll_start.elapsed() > timeout {
+            return Err("Batch processing timeout after 5 minutes".into());
+        }
+
+        let status = client.batches().retrieve(&batch.id).await?;
+        println!("  Status: {:?}, Progress: {:?}",
+            status.processing_status,
+            status.request_counts
+        );
+
+        if status.processing_status == ProcessingStatus::Ended {
+            break status;
+        }
+
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    };
+
+    metrics.finish();
+
+    println!("\n✅ Batch completed!");
+    println!("✅ Final counts: {:?}", final_status.request_counts);
+
+    assert_eq!(final_status.request_counts.succeeded, 2, "Expected 2 successful results");
+    assert_eq!(final_status.request_counts.errored, 0, "Expected 0 errors");
+
+    // Retrieve and verify results
+    println!("\n📥 Retrieving results...");
+    let results = client.batches().results(&batch.id).await?;
+
+    assert_eq!(results.len(), 2, "Expected 2 results");
+
+    for (i, result) in results.iter().enumerate() {
+        println!("\n  Result {}:", i + 1);
+        assert!(result.result.is_ok(), "Result {} should be successful", i + 1);
+
+        let msg = result.result.as_ref().unwrap();
+        println!("    Custom ID: {}", result.custom_id);
+        println!("    Response: {}", msg.text());
+
+        assert!(!msg.text().is_empty(), "Response should not be empty");
+
+        // Verify answers
+        match i {
+            0 => assert!(msg.text().contains("4"), "Expected '4' in first response"),
+            1 => assert!(msg.text().contains("6"), "Expected '6' in second response"),
+            _ => {}
+        }
+    }
+
+    println!("\n✅ All results validated");
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_batches_list() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+
+    println!("\n🧪 Testing: List batches");
+
+    // Create a batch first
+    let requests = vec![
+        MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(20u32)
+            .messages(vec![Message::user("Hi")])
+            .build()?,
+    ];
+
+    let batch = client.batches()
+        .create(BatchRequest { requests })
+        .await?;
+
+    println!("✅ Created batch: {}", batch.id);
+
+    // List batches
+    println!("\n📋 Listing batches...");
+    let batches = client.batches().list(None, None, None, None).await?;
+
+    println!("✅ Found {} batches", batches.data.len());
+
+    // Verify our batch is in the list
+    let found = batches.data.iter()
+        .any(|b| b.id == batch.id);
+
+    assert!(found, "Created batch should appear in list");
+
+    println!("✅ Created batch found in list");
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_batches_cancel() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+
+    println!("\n🧪 Testing: Cancel batch");
+
+    // Create a batch
+    let requests = vec![
+        MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(100u32)
+            .messages(vec![Message::user("Write a long story")])
+            .build()?,
+    ];
+
+    let batch = client.batches()
+        .create(BatchRequest { requests })
+        .await?;
+
+    println!("✅ Created batch: {}", batch.id);
+
+    // Immediately try to cancel
+    println!("\n🛑 Canceling batch...");
+    let canceled = client.batches().cancel(&batch.id).await?;
+
+    println!("✅ Cancel response: {:?}", canceled.processing_status);
+
+    // Verify it's canceling or canceled
+    assert!(
+        matches!(
+            canceled.processing_status,
+            ProcessingStatus::Canceling | ProcessingStatus::Canceled
+        ),
+        "Expected canceling or canceled status, got: {:?}",
+        canceled.processing_status
+    );
+
+    println!("✅ Batch canceled successfully");
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_batches_error_handling() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Batch with errors");
+
+    // Create batch with one valid and one invalid request
+    let requests = vec![
+        // Valid request
+        MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .messages(vec![Message::user("Hello")])
+            .build()?,
+        // Invalid request (model doesn't exist)
+        MessageRequest::builder()
+            .model("invalid-model-xyz-123")
+            .max_tokens(50u32)
+            .messages(vec![Message::user("Hello")])
+            .build()?,
+    ];
+
+    println!("📝 Creating batch with 1 valid + 1 invalid request...");
+    let batch = client.batches()
+        .create(BatchRequest { requests })
+        .await?;
+
+    println!("✅ Batch created: {}", batch.id);
+
+    // Poll until complete
+    println!("\n⏳ Polling for completion...");
+    let timeout = std::time::Duration::from_secs(300);
+    let poll_start = std::time::Instant::now();
+
+    let final_status = loop {
+        if poll_start.elapsed() > timeout {
+            return Err("Timeout".into());
+        }
+
+        let status = client.batches().retrieve(&batch.id).await?;
+        println!("  Progress: {:?}", status.request_counts);
+
+        if status.processing_status == ProcessingStatus::Ended {
+            break status;
+        }
+
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    };
+
+    metrics.finish();
+
+    println!("\n✅ Batch completed");
+    println!("✅ Final counts: {:?}", final_status.request_counts);
+
+    // Should have 1 success and 1 error
+    assert_eq!(final_status.request_counts.succeeded, 1, "Expected 1 success");
+    assert_eq!(final_status.request_counts.errored, 1, "Expected 1 error");
+
+    // Check results
+    let results = client.batches().results(&batch.id).await?;
+
+    let successes = results.iter().filter(|r| r.result.is_ok()).count();
+    let errors = results.iter().filter(|r| r.result.is_err()).count();
+
+    println!("\n✅ Results: {} successes, {} errors", successes, errors);
+    assert_eq!(successes, 1);
+    assert_eq!(errors, 1);
+
+    // Examine the error
+    let error_result = results.iter()
+        .find(|r| r.result.is_err())
+        .expect("Should have one error");
+
+    println!("\n❌ Error result:");
+    println!("    Custom ID: {}", error_result.custom_id);
+    println!("    Error: {:?}", error_result.result.as_ref().err());
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_batches_medium_size() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Medium batch (10 requests)");
+
+    // Create 10 math questions
+    let requests: Vec<_> = (1..=10)
+        .map(|i| {
+            MessageRequest::builder()
+                .model("claude-3-5-haiku-20241022") // Use faster model
+                .max_tokens(20u32)
+                .messages(vec![
+                    Message::user(&format!("What is {} + {}? Answer with just the number.", i, i))
+                ])
+                .build()
+        })
+        .collect::<Result<_, _>>()?;
+
+    println!("📝 Creating batch with {} requests...", requests.len());
+    let batch = client.batches()
+        .create(BatchRequest { requests })
+        .await?;
+
+    println!("✅ Batch ID: {}", batch.id);
+
+    // Poll
+    println!("\n⏳ Polling for completion...");
+    let timeout = std::time::Duration::from_secs(600); // 10 minutes for larger batch
+    let poll_start = std::time::Instant::now();
+
+    let final_status = loop {
+        if poll_start.elapsed() > timeout {
+            return Err("Timeout".into());
+        }
+
+        let status = client.batches().retrieve(&batch.id).await?;
+        let progress = if status.request_counts.processing + status.request_counts.succeeded + status.request_counts.errored > 0 {
+            ((status.request_counts.succeeded + status.request_counts.errored) as f64 / 10.0) * 100.0
+        } else {
+            0.0
+        };
+
+        println!("  Progress: {:.0}% - {:?}", progress, status.request_counts);
+
+        if status.processing_status == ProcessingStatus::Ended {
+            break status;
+        }
+
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    };
+
+    metrics.finish();
+
+    println!("\n✅ Batch completed in {:?}", metrics.elapsed());
+    println!("✅ Final counts: {:?}", final_status.request_counts);
+
+    assert_eq!(final_status.request_counts.succeeded, 10, "All requests should succeed");
+
+    // Retrieve and verify
+    let results = client.batches().results(&batch.id).await?;
+    assert_eq!(results.len(), 10);
+
+    println!("\n📊 Sample results:");
+    for i in 0..3 {
+        if let Some(result) = results.get(i) {
+            if let Ok(msg) = &result.result {
+                println!("  Result {}: {}", i + 1, msg.text().trim());
+            }
+        }
+    }
+
+    println!("✅ All {} results validated", results.len());
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_batches_pagination() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+
+    println!("\n🧪 Testing: Batch list pagination");
+
+    // List with limit
+    println!("📋 Listing batches with limit=5...");
+    let page1 = client.batches().list(Some(5), None, None, None).await?;
+
+    println!("✅ Page 1: {} batches", page1.data.len());
+    println!("✅ Has more: {}", page1.has_more);
+    println!("✅ First ID: {}", page1.first_id.as_deref().unwrap_or("none"));
+    println!("✅ Last ID: {}", page1.last_id.as_deref().unwrap_or("none"));
+
+    assert!(page1.data.len() <= 5, "Should respect limit");
+
+    // If there are more, get next page
+    if page1.has_more && page1.data.len() > 0 {
+        println!("\n📋 Fetching next page...");
+        let last_id = &page1.data.last().unwrap().id;
+
+        let page2 = client.batches().list(Some(5), Some(last_id), None, None).await?;
+
+        println!("✅ Page 2: {} batches", page2.data.len());
+
+        // Verify pages are different
+        if !page2.data.is_empty() {
+            let page1_ids: Vec<_> = page1.data.iter().map(|b| &b.id).collect();
+            let page2_ids: Vec<_> = page2.data.iter().map(|b| &b.id).collect();
+
+            let overlap = page1_ids.iter().any(|id| page2_ids.contains(id));
+            assert!(!overlap, "Pages should not overlap");
+
+            println!("✅ Pages are distinct");
+        }
+    }
+
+    Ok(())
+}

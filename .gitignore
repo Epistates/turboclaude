@@ -1,0 +1,9 @@
+/target
+.strategy
+.env
+.DS_Store
+.vscode
+
+*.md
+!README.md
+!CHANGELOG.md

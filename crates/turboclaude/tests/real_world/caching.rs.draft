@@ -1,0 +1,360 @@
+/// Real-world Prompt Caching tests
+///
+/// Run with: cargo test --ignored real_world_caching
+
+use turboclaude::{Client, Message, MessageRequest};
+use turboclaude::types::{SystemPrompt, SystemPromptBlock, CacheControl};
+use crate::real_world::common::{TestConfig, TestMetrics};
+
+#[tokio::test]
+#[ignore]
+async fn real_world_caching_basic() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Basic prompt caching");
+
+    let large_context = "The quick brown fox jumps over the lazy dog. ".repeat(100);
+
+    // First request - creates cache
+    println!("📝 Request 1: Creating cache...");
+    let msg1 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(100u32)
+            .system(SystemPrompt::Blocks(vec![
+                SystemPromptBlock::Text {
+                    text: large_context.clone(),
+                    cache_control: Some(CacheControl::ephemeral()),
+                }
+            ]))
+            .messages(vec![Message::user("What animal jumps?")])
+            .build()?)
+        .await?;
+
+    let cache_creation = msg1.usage.cache_creation_input_tokens.unwrap_or(0);
+    println!("✅ Cache creation tokens: {}", cache_creation);
+    println!("✅ Input tokens: {}", msg1.usage.input_tokens);
+
+    assert!(cache_creation > 0, "Expected cache creation tokens");
+
+    // Wait a moment to ensure cache is ready
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    // Second request - uses cache
+    println!("\n📝 Request 2: Using cache...");
+    let msg2 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(100u32)
+            .system(vec![
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &large_context.to_string(), cache_control: Some(CacheControl::ephemeral()) }])
+            ])
+            .messages(vec![Message::user("What color is the fox?")])
+            .build()?)
+        .await?;
+
+    metrics.finish();
+
+    let cache_read = msg2.usage.cache_read_input_tokens.unwrap_or(0);
+    println!("✅ Cache read tokens: {}", cache_read);
+    println!("✅ Input tokens: {}", msg2.usage.input_tokens);
+
+    assert!(cache_read > 0, "Expected cache read tokens");
+    assert!(
+        msg2.usage.input_tokens < msg1.usage.input_tokens,
+        "Expected reduced tokens on cache hit: {} vs {}",
+        msg2.usage.input_tokens,
+        msg1.usage.input_tokens
+    );
+
+    println!("\n💰 Token savings: {} tokens", msg1.usage.input_tokens - msg2.usage.input_tokens);
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_caching_large_document() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Caching with large document");
+
+    // Simulate a large document (e.g., codebase, documentation)
+    let large_doc = r#"
+    # User Authentication System Documentation
+
+    ## Overview
+    The authentication system provides secure user login and session management.
+
+    ## Components
+    - AuthService: Main authentication service
+    - TokenManager: JWT token generation and validation
+    - SessionStore: Session persistence layer
+    - UserRepository: User data access
+
+    ## Authentication Flow
+    1. User submits credentials (username/password)
+    2. AuthService validates against UserRepository
+    3. TokenManager generates JWT token
+    4. SessionStore creates new session
+    5. Token returned to client
+
+    ## Token Structure
+    - Header: Algorithm and type
+    - Payload: User ID, email, roles, expiration
+    - Signature: HMAC-SHA256 signature
+
+    ## Security Features
+    - Password hashing with bcrypt (cost factor: 12)
+    - JWT tokens with 1-hour expiration
+    - Refresh tokens with 30-day expiration
+    - Rate limiting: 5 attempts per minute
+    - IP-based blocking after 10 failed attempts
+    "#.repeat(20); // Make it substantial
+
+    // First request
+    println!("📝 Request 1: Processing document (creating cache)...");
+    let msg1 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(200u32)
+            .system(vec![
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &large_doc.to_string(), cache_control: Some(CacheControl::ephemeral()) }])
+            ])
+            .messages(vec![Message::user("What hashing algorithm is used for passwords?")])
+            .build()?)
+        .await?;
+
+    println!("✅ Response 1: {}", msg1.text());
+    println!("✅ Cache creation: {} tokens", msg1.usage.cache_creation_input_tokens.unwrap_or(0));
+    println!("✅ Total input: {} tokens", msg1.usage.input_tokens);
+
+    // Second request
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    println!("\n📝 Request 2: Different question (using cache)...");
+    let msg2 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(200u32)
+            .system(vec![
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &large_doc.to_string(), cache_control: Some(CacheControl::ephemeral()) }])
+            ])
+            .messages(vec![Message::user("How long do JWT tokens last?")])
+            .build()?)
+        .await?;
+
+    metrics.finish();
+
+    println!("✅ Response 2: {}", msg2.text());
+    println!("✅ Cache read: {} tokens", msg2.usage.cache_read_input_tokens.unwrap_or(0));
+    println!("✅ Total input: {} tokens", msg2.usage.input_tokens);
+
+    let savings = msg1.usage.input_tokens - msg2.usage.input_tokens;
+    let savings_pct = (savings as f64 / msg1.usage.input_tokens as f64) * 100.0;
+
+    println!("\n💰 Savings: {} tokens ({:.1}%)", savings, savings_pct);
+
+    assert!(savings > 0, "Expected token savings");
+    assert!(savings_pct > 50.0, "Expected >50% savings on large cached content");
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_caching_multiple_breakpoints() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Multiple cache breakpoints");
+
+    let context1 = "System Context: You are a helpful AI assistant. ".repeat(50);
+    let context2 = "User Manual: Always be polite and professional. ".repeat(50);
+    let context3 = "Guidelines: Provide concise and accurate answers. ".repeat(50);
+
+    // First request with all three contexts cached
+    println!("📝 Request 1: Creating multiple caches...");
+    let msg1 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .system(vec![
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &context1.to_string(), cache_control: Some(CacheControl::ephemeral()) }]),
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &context2.to_string(), cache_control: Some(CacheControl::ephemeral()) }]),
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &context3.to_string(), cache_control: Some(CacheControl::ephemeral()) }]),
+            ])
+            .messages(vec![Message::user("Hello")])
+            .build()?)
+        .await?;
+
+    let creation1 = msg1.usage.cache_creation_input_tokens.unwrap_or(0);
+    println!("✅ Cache creation: {} tokens", creation1);
+
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    // Second request - reuse all caches
+    println!("\n📝 Request 2: Reusing all caches...");
+    let msg2 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .system(vec![
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &context1.to_string(), cache_control: Some(CacheControl::ephemeral()) }]),
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &context2.to_string(), cache_control: Some(CacheControl::ephemeral()) }]),
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &context3.to_string(), cache_control: Some(CacheControl::ephemeral()) }]),
+            ])
+            .messages(vec![Message::user("Hi again")])
+            .build()?)
+        .await?;
+
+    metrics.finish();
+
+    let read2 = msg2.usage.cache_read_input_tokens.unwrap_or(0);
+    println!("✅ Cache read: {} tokens", read2);
+
+    assert!(read2 > 0, "Expected cache reads");
+    println!("\n💰 Cache efficiency: {} tokens read from cache", read2);
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_caching_mixed_cached_uncached() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+    let mut metrics = TestMetrics::new();
+
+    println!("\n🧪 Testing: Mixed cached and uncached content");
+
+    let static_context = "Static background information. ".repeat(100);
+    let dynamic_context = "Dynamic user-specific data: Session 1";
+
+    // First request
+    println!("📝 Request 1: Cache static, not dynamic...");
+    let msg1 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .system(vec![
+                SystemContent::text(&dynamic_context), // Not cached - changes each request
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &static_context.to_string(), cache_control: Some(CacheControl::ephemeral()) }]), // Cached
+            ])
+            .messages(vec![Message::user("Process this")])
+            .build()?)
+        .await?;
+
+    let creation = msg1.usage.cache_creation_input_tokens.unwrap_or(0);
+    println!("✅ Created cache: {} tokens", creation);
+
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    // Second request with different dynamic content
+    let dynamic_context2 = "Dynamic user-specific data: Session 2";
+
+    println!("\n📝 Request 2: New dynamic, cached static...");
+    let msg2 = client.messages()
+        .create(MessageRequest::builder()
+            .model("claude-3-5-sonnet-20241022")
+            .max_tokens(50u32)
+            .system(vec![
+                SystemContent::text(&dynamic_context2), // Changed
+                SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &static_context.to_string(), cache_control: Some(CacheControl::ephemeral()) }]), // Same, cached
+            ])
+            .messages(vec![Message::user("Process this again")])
+            .build()?)
+        .await?;
+
+    metrics.finish();
+
+    let read = msg2.usage.cache_read_input_tokens.unwrap_or(0);
+    println!("✅ Read from cache: {} tokens", read);
+
+    assert!(read > 0, "Expected cache read despite dynamic content change");
+
+    metrics.print_summary();
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn real_world_caching_cost_comparison() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TestConfig::from_env()?;
+    let client = Client::new(&config.api_key);
+
+    println!("\n🧪 Testing: Cache cost comparison");
+
+    let large_context = "Context data. ".repeat(200);
+
+    // Without caching - 3 requests
+    println!("📝 Without caching (3 requests)...");
+    let mut total_without_cache = 0u32;
+
+    for i in 1..=3 {
+        let msg = client.messages()
+            .create(MessageRequest::builder()
+                .model("claude-3-5-sonnet-20241022")
+                .max_tokens(50u32)
+                .system(&large_context) // No cache
+                .messages(vec![Message::user(&format!("Question {}", i))])
+                .build()?)
+            .await?;
+
+        total_without_cache += msg.usage.input_tokens;
+        println!("  Request {}: {} input tokens", i, msg.usage.input_tokens);
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+
+    println!("\n📝 With caching (3 requests)...");
+    let mut total_with_cache = 0u32;
+    let mut total_cache_creation = 0u32;
+    let mut total_cache_read = 0u32;
+
+    for i in 1..=3 {
+        let msg = client.messages()
+            .create(MessageRequest::builder()
+                .model("claude-3-5-sonnet-20241022")
+                .max_tokens(50u32)
+                .system(vec![
+                    SystemPrompt::Blocks(vec![SystemPromptBlock::Text { text: &large_context.to_string(), cache_control: Some(CacheControl::ephemeral()) }])
+                ])
+                .messages(vec![Message::user(&format!("Question {}", i))])
+                .build()?)
+            .await?;
+
+        total_with_cache += msg.usage.input_tokens;
+        total_cache_creation += msg.usage.cache_creation_input_tokens.unwrap_or(0);
+        total_cache_read += msg.usage.cache_read_input_tokens.unwrap_or(0);
+
+        println!("  Request {}: {} input tokens ({} cache creation, {} cache read)",
+            i, msg.usage.input_tokens,
+            msg.usage.cache_creation_input_tokens.unwrap_or(0),
+            msg.usage.cache_read_input_tokens.unwrap_or(0)
+        );
+
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+
+    println!("\n=== COST COMPARISON ===");
+    println!("Without cache: {} tokens", total_without_cache);
+    println!("With cache:    {} tokens", total_with_cache);
+    println!("Savings:       {} tokens ({:.1}%)",
+        total_without_cache.saturating_sub(total_with_cache),
+        ((total_without_cache.saturating_sub(total_with_cache)) as f64 / total_without_cache as f64) * 100.0
+    );
+    println!("\nCache stats:");
+    println!("  Creation: {} tokens", total_cache_creation);
+    println!("  Reads:    {} tokens", total_cache_read);
+    println!("=======================");
+
+    Ok(())
+}

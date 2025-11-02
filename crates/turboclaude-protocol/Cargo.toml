@@ -1,0 +1,21 @@
+[package]
+name = "turboclaude-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Shared protocol types and definitions for TurboClaude REST and Agent SDKs"
+repository.workspace = true
+documentation = "https://docs.rs/turboclaude-protocol"
+
+[dependencies]
+chrono = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }

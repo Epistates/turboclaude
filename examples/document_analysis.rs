@@ -1,0 +1,178 @@
+//! Example: Document and PDF Analysis
+//!
+//! Demonstrates how to analyze documents and PDFs with Claude.
+//! Supports base64-encoded PDFs, URL-based PDFs, and plain text documents.
+//!
+//! Run with: cargo run --example document_analysis
+
+use anthropic::{
+    Client,
+    types::{
+        MessageRequest, Message, MessageParam, Role, Models,
+        ContentBlockParam, DocumentSource, CacheControl, CacheTTL,
+    },
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("=== Document Analysis Examples ===\n");
+
+    // Example 1: Base64-encoded PDF
+    println!("1. Analyzing a base64-encoded PDF:");
+    let base64_pdf_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![MessageParam {
+            role: Role::User,
+            content: vec![
+                ContentBlockParam::Text {
+                    text: "Please summarize this PDF document".to_string(),
+                },
+                ContentBlockParam::Document {
+                    source: DocumentSource::base64_pdf(
+                        "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iajogb2JqCjw8L1R5cGUvUGFnZXM..."
+                    ),
+                    cache_control: None,
+                    title: Some("Company Report Q4 2024".to_string()),
+                    context: Some("Financial analysis required".to_string()),
+                },
+            ],
+        }])
+        .build()?;
+
+    println!("   Document type: Base64 PDF");
+    println!("   Title: Company Report Q4 2024");
+    println!("   Context: Financial analysis required\n");
+
+    // Example 2: PDF from URL
+    println!("2. Analyzing a PDF from URL:");
+    let url_pdf_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![MessageParam {
+            role: Role::User,
+            content: vec![
+                ContentBlockParam::Text {
+                    text: "Extract key findings from this research paper".to_string(),
+                },
+                ContentBlockParam::Document {
+                    source: DocumentSource::url_pdf("https://example.com/research-paper.pdf"),
+                    cache_control: None,
+                    title: Some("AI Research Paper 2024".to_string()),
+                    context: None,
+                },
+            ],
+        }])
+        .build()?;
+
+    println!("   Document type: URL PDF");
+    println!("   URL: https://example.com/research-paper.pdf");
+    println!("   Title: AI Research Paper 2024\n");
+
+    // Example 3: Plain text document
+    println!("3. Analyzing plain text document:");
+    let plain_text_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![MessageParam {
+            role: Role::User,
+            content: vec![
+                ContentBlockParam::Text {
+                    text: "Review this code documentation".to_string(),
+                },
+                ContentBlockParam::Document {
+                    source: DocumentSource::plain_text(
+                        "# API Documentation\n\n\
+                         ## Authentication\n\
+                         Use Bearer tokens in the Authorization header...\n\n\
+                         ## Endpoints\n\
+                         - GET /api/users\n\
+                         - POST /api/users\n\
+                         ..."
+                    ),
+                    cache_control: None,
+                    title: Some("API Documentation".to_string()),
+                    context: Some("Internal API reference".to_string()),
+                },
+            ],
+        }])
+        .build()?;
+
+    println!("   Document type: Plain text");
+    println!("   Title: API Documentation");
+    println!("   Context: Internal API reference\n");
+
+    // Example 4: Cached large document (cost optimization)
+    println!("4. Large document with caching (cost optimization):");
+    let cached_document_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(1024u32)
+        .messages(vec![MessageParam {
+            role: Role::User,
+            content: vec![
+                ContentBlockParam::Text {
+                    text: "Answer questions about this technical specification".to_string(),
+                },
+                ContentBlockParam::Document {
+                    source: DocumentSource::base64_pdf("JVBERi0x... (large PDF)"),
+                    // Cache for 1 hour - subsequent requests will be ~90% cheaper!
+                    cache_control: Some(CacheControl::ephemeral_with_ttl(CacheTTL::OneHour)),
+                    title: Some("Technical Specifications v2.0".to_string()),
+                    context: Some("Product engineering documentation".to_string()),
+                },
+            ],
+        }])
+        .build()?;
+
+    println!("   Document type: Base64 PDF");
+    println!("   Cache control: Ephemeral (1 hour)");
+    println!("   Benefit: ~90% cost reduction on subsequent requests!");
+    println!("   Use case: Frequently queried reference documents\n");
+
+    // Example 5: Multiple documents in one request
+    println!("5. Comparing multiple documents:");
+    let multi_doc_request = MessageRequest::builder()
+        .model(Models::CLAUDE_3_5_SONNET)
+        .max_tokens(2048u32)
+        .messages(vec![MessageParam {
+            role: Role::User,
+            content: vec![
+                ContentBlockParam::Text {
+                    text: "Compare these two versions of the contract".to_string(),
+                },
+                ContentBlockParam::Document {
+                    source: DocumentSource::url_pdf("https://example.com/contract-v1.pdf"),
+                    cache_control: Some(CacheControl::ephemeral()),
+                    title: Some("Contract v1.0".to_string()),
+                    context: Some("Original contract".to_string()),
+                },
+                ContentBlockParam::Document {
+                    source: DocumentSource::url_pdf("https://example.com/contract-v2.pdf"),
+                    cache_control: Some(CacheControl::ephemeral()),
+                    title: Some("Contract v2.0".to_string()),
+                    context: Some("Revised contract".to_string()),
+                },
+            ],
+        }])
+        .build()?;
+
+    println!("   Documents: 2 PDFs (v1.0 and v2.0)");
+    println!("   Task: Compare and highlight differences");
+    println!("   Cache: Both documents cached (default 5m TTL)\n");
+
+    println!("=== Best Practices ===");
+    println!("1. Use caching for large, frequently-accessed documents");
+    println!("2. Provide titles and context for better understanding");
+    println!("3. URL sources are simpler for publicly accessible docs");
+    println!("4. Base64 encoding works for any binary PDF");
+    println!("5. Plain text is perfect for code, logs, and structured data");
+    println!("\n=== Use Cases ===");
+    println!("- Legal document analysis");
+    println!("- Research paper summarization");
+    println!("- Technical documentation Q&A");
+    println!("- Contract comparison");
+    println!("- Code documentation review");
+    println!("- Financial report analysis");
+
+    Ok(())
+}

@@ -1,0 +1,24 @@
+[package]
+name = "turboclaude-integration-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Integration tests for TurboClaude workspace"
+repository.workspace = true
+publish = false
+
+[dependencies]
+tokio = { workspace = true }
+serde_json = { workspace = true }
+
+turboclaude = { path = "../turboclaude" }
+turboclaude-protocol = { path = "../turboclaude-protocol" }
+turboclaude-transport = { path = "../turboclaude-transport" }
+turboclaudeagent = { path = "../turboclaudeagent" }
+
+[dev-dependencies]
+rstest = { workspace = true }
+wiremock = { workspace = true }
+tokio-test = { workspace = true }

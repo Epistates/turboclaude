@@ -1,0 +1,183 @@
+[package]
+name = "turboclaude"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Unofficial Rust SDK for Anthropic's Claude API with 100% feature parity to official Python SDK"
+repository.workspace = true
+documentation = "https://docs.rs/turboclaude"
+readme = "README.md"
+keywords = ["anthropic", "claude", "ai", "llm", "sdk"]
+categories = ["api-bindings", "asynchronous"]
+
+[dependencies]
+# Workspace-shared dependencies
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+erased-serde = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Workspace-local dependencies (not in workspace.dependencies yet)
+turboclaude-protocol = { path = "../turboclaude-protocol" }
+turboclaude-transport = { path = "../turboclaude-transport" }
+
+# HTTP client
+reqwest = { version = "0.12.23", features = ["json", "stream", "rustls-tls", "multipart"] }
+
+# SSE streaming for messages endpoint
+eventsource-stream = "0.2"
+futures = "0.3"
+pin-project = "1.1"
+tokio-stream = "0.1"
+
+# HTTP types and utilities
+http = "1.1"
+url = "2.5"
+bytes = "1.8"
+base64 = "0.21"
+
+# Tower middleware for retry/rate limiting
+tower = "0.5"
+tower-http = { version = "0.6", features = ["timeout", "trace"] }
+
+# Rate limiting
+governor = "0.7"
+
+# Tracing/logging
+tracing-subscriber = { version = "0.3", optional = true }
+
+# Secret management for API keys
+secrecy = { version = "0.10", features = ["serde"] }
+
+# Builder pattern for requests
+derive_builder = "0.20"
+
+# Environment variable support
+dotenvy = { version = "0.15", optional = true }
+
+# Schema generation for tools
+schemars = { version = "0.8", optional = true }
+
+# Fast JSON parsing (optional, for performance)
+sonic-rs = { version = "0.3", optional = true }
+
+# Optional MCP support via TurboMCP
+turbomcp-client = { version = "2.0.0-rc.3", optional = true }
+turbomcp-protocol = { version = "2.0.0-rc.3", optional = true }
+
+# AWS Bedrock support (optional)
+aws-config = { version = "1.5", optional = true }
+aws-sdk-bedrockruntime = { version = "1.106", optional = true }
+aws-smithy-types = { version = "1.2", optional = true }
+
+# Google Vertex AI support (optional)
+google-cloud-auth = { version = "1.0", optional = true }
+
+[dev-dependencies]
+# Testing
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+wiremock = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+temp-env = "0.3.0"
+
+# Additional test dependencies
+tokio = { version = "1.48", features = ["test-util", "macros", "time"] }
+mockall = "0.13"
+insta = { version = "1.41", features = ["json", "yaml", "redactions"] }
+proptest = "1.5"
+pretty_assertions = "1.4"
+assert_matches = "1.5"
+tempfile = "3.14"
+criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
+
+[features]
+default = ["env"]
+# Feature flags matching Python SDK capabilities
+env = ["dotenvy"]  # Load API key from environment
+blocking = []  # Blocking client wrapper
+mcp = ["turbomcp-client", "turbomcp-protocol"]  # MCP integration
+schema = ["schemars"]  # JSON schema generation for tools
+simd-json = ["sonic-rs"]  # Fast SIMD JSON parsing
+bedrock = ["aws-config", "aws-sdk-bedrockruntime", "aws-smithy-types"]  # AWS Bedrock support
+vertex = ["google-cloud-auth"]  # Google Vertex AI support
+trace = ["tracing-subscriber"]  # Enable tracing subscriber
+
+# Platform-specific features
+full = ["env", "blocking", "schema", "trace"]
+
+# AWS Bedrock examples
+[[example]]
+name = "bedrock_basic"
+path = "examples/bedrock_basic.rs"
+required-features = ["bedrock", "trace"]
+
+[[example]]
+name = "bedrock_streaming"
+path = "examples/bedrock_streaming.rs"
+required-features = ["bedrock", "trace"]
+
+# Google Vertex AI examples
+[[example]]
+name = "vertex_basic"
+path = "examples/vertex_basic.rs"
+required-features = ["vertex", "trace"]
+
+[[example]]
+name = "vertex_streaming"
+path = "examples/vertex_streaming.rs"
+required-features = ["vertex", "trace"]
+
+# Disabled examples - will be rewritten in Phase 5 Week 2
+# [[example]]
+# name = "basic"
+# path = "examples/basic.rs"
+
+# [[example]]
+# name = "streaming"
+# path = "examples/streaming.rs"
+
+[[example]]
+name = "tools"
+required-features = ["tools"]
+
+[[example]]
+name = "mcp_basic"
+required-features = ["anthropic", "bedrock", "vertex"]
+
+# [[example]]
+# name = "tool_runner"
+# path = "examples/tool_runner.rs"
+# required-features = ["schema"]
+
+
+# [[example]]
+# name = "mcp_integration"
+# path = "examples/mcp_integration.rs"
+# required-features = ["mcp"]
+
+# [[example]]
+# name = "prompt_caching"
+# path = "examples/prompt_caching.rs"
+
+# [[example]]
+# name = "document_analysis"
+# path = "examples/document_analysis.rs"
+
+# [[example]]
+# name = "response_headers"
+# path = "examples/response_headers.rs"
+
+[[bench]]
+name = "message_performance"
+harness = false
+
+# Note: DO NOT add [profile.*] sections here - they are defined in the workspace root (Cargo.toml)

@@ -1,0 +1,21 @@
+# Find public functions with panics that need documentation
+id: needs-panic-docs
+language: Rust
+severity: warning
+message: Public function contains panic/unwrap/expect but lacks /// # Panics documentation
+
+rule:
+  all:
+    - kind: function_item
+    # Is public
+    - has:
+        kind: visibility_modifier
+        pattern: pub
+    # Contains panic-inducing code
+    - has:
+        any:
+          - pattern: panic!($$$)
+          - pattern: $EXPR.unwrap()
+          - pattern: $EXPR.expect($$$)
+    # Doesn't have panic docs (heuristic - check for "Panics" in doc comments)
+    # Note: ast-grep can't check doc comments easily, manual review needed

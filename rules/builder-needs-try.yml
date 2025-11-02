@@ -1,0 +1,30 @@
+# Find builder methods that need try_* fallible alternatives
+id: builder-needs-try-variant
+language: Rust
+severity: info
+message: Builder method uses expect/unwrap - consider adding try_* fallible variant
+
+rule:
+  all:
+    - kind: function_item
+    # Has mut self parameter (builder pattern)
+    - has:
+        kind: parameters
+        has:
+          kind: self_parameter
+          pattern: mut self
+    # Returns self (builder pattern)
+    - has:
+        kind: block
+        has:
+          pattern: self
+          kind: return_expression
+    # Contains expect or unwrap
+    - has:
+        any:
+          - pattern: $EXPR.expect($$$)
+          - pattern: $EXPR.unwrap()
+    # Is public
+    - has:
+        kind: visibility_modifier
+        pattern: pub
