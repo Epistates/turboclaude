@@ -507,21 +507,9 @@ See `examples/response_headers.rs` for comprehensive usage patterns.
    - Automated type generation via build.rs
    - Always in sync with latest API
 
-2. **Platform Support**
-   - AWS Bedrock integration
-   - Google Vertex AI support
-
-3. **Advanced Streaming**
+2. **Advanced Streaming**
    - WebSocket support
-   - Multiplexed streams
-
-4. **Enhanced MCP Integration**
-   - Bi-directional MCP communication
-   - Tool discovery and registration
-
-5. **Performance Optimizations**
-   - SIMD JSON parsing (sonic-rs)
-   - Zero-copy message handling
+   - Multiplexed streams with unified backpressure handling
 
 ## 🤝 Contributing
 
@@ -577,9 +565,11 @@ The maintainer ([epistates](https://github.com/epistates)) has implemented this 
 - ✅ **Error Handling** - Comprehensive error types with context
 - ✅ **Automatic Retries** - Configurable retry logic with exponential backoff
 - ✅ **Rate Limiting** - Built-in rate limit handling
+- ✅ **MCP Integration** - Full Model Context Protocol support with adapters, registry, and bridge
+- ✅ **Performance** - Optional SIMD JSON parsing (sonic-rs) for high-performance scenarios
 
 ### Provider Support
 - ✅ **Anthropic API** (api.anthropic.com) - Production ready
-- ⏳ **AWS Bedrock** - Not yet implemented (see `PROVIDER_SUPPORT_STATUS.md`)
-- ⏳ **Google Vertex AI** - Not yet implemented (see `PROVIDER_SUPPORT_STATUS.md`)
+- ✅ **AWS Bedrock** - Fully implemented (see examples: `bedrock_basic.rs`, `bedrock_streaming.rs`)
+- ✅ **Google Vertex AI** - Fully implemented (see examples: `vertex_basic.rs`, `vertex_streaming.rs`)
 
