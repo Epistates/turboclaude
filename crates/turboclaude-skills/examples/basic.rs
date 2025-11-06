@@ -11,8 +11,8 @@ async fn main() -> anyhow::Result<()> {
     println!("=== Example 1: Load Single Skill ===\n");
 
     // For this example to work, you need a skill directory
-    // Create one manually or use the reference skills
-    let skill_path = "tests/fixtures/skills/minimal-skill/SKILL.md";
+    // We'll use the example skills in the skills/ directory
+    let skill_path = "skills/git-helper/SKILL.md";
 
     match Skill::from_file(skill_path).await {
         Ok(skill) => {
@@ -45,10 +45,9 @@ async fn main() -> anyhow::Result<()> {
     // Example 2: Use a registry for discovery
     println!("\n=== Example 2: Skill Registry ===\n");
 
-    // Try to discover skills from reference directory if available
+    // Discover skills from the skills directory
     let skill_dirs = vec![
-        PathBuf::from("tests/fixtures/skills"),
-        PathBuf::from("/Users/nickpaterno/work/reference/skills"),
+        PathBuf::from("skills"),
     ];
 
     let mut registry = SkillRegistry::builder()
@@ -78,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
     if !skills.is_empty() {
         println!("\n=== Example 3: Semantic Search ===\n");
 
-        let queries = vec!["PDF", "GIF", "create", "builder"];
+        let queries = vec!["git", "branch", "commit", "repository"];
 
         for query in queries {
             let matches = registry.find(query).await?;
