@@ -59,6 +59,11 @@ pub mod streaming_validation;
 pub mod types;
 pub mod validation;
 
+// Schema generation utilities (requires schema feature)
+#[cfg(feature = "schema")]
+#[cfg_attr(docsrs, doc(cfg(feature = "schema")))]
+pub mod schema;
+
 // Provider modules (optional, feature-gated)
 #[cfg(any(feature = "bedrock", feature = "vertex"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "bedrock", feature = "vertex"))))]

@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub use crate::types::model::Model;
+pub use turboclaude_protocol::types::Model;
 
 /// Paginated response for model listing.
 ///
@@ -85,7 +85,7 @@ mod tests {
         let page: ModelPage = serde_json::from_str(json).unwrap();
         assert_eq!(page.data.len(), 1);
         assert_eq!(page.data[0].id, "claude-3-5-sonnet-20241022");
-        assert_eq!(page.data[0].display_name, "Claude 3.5 Sonnet");
+        assert_eq!(page.data[0].display_name, Some("Claude 3.5 Sonnet".to_string()));
     }
 
     #[test]

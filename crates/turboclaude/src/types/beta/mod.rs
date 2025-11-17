@@ -9,6 +9,8 @@ pub use context_management::*;
 pub use files::*;
 pub use memory::*;
 pub use models::*;
+#[cfg(feature = "schema")]
+pub use parsed::*;
 pub use skills::*;
 pub use thinking::{
     BetaAllThinkingTurnsParam, BetaClearThinking20251015EditParam,
@@ -45,6 +47,15 @@ pub mod memory;
 
 /// Models API types
 pub mod models;
+
+/// Parsed message types for structured outputs
+///
+/// Supports:
+/// - Type-safe JSON output parsing
+/// - Generic ParsedBetaMessage<T> wrapper
+/// - Automatic schema validation
+#[cfg(feature = "schema")]
+pub mod parsed;
 
 /// Skills API types
 pub mod skills;

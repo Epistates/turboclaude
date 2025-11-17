@@ -407,6 +407,59 @@ impl BetaMessages {
     pub fn tool_runner(&self) -> crate::tools::ToolRunner {
         crate::tools::ToolRunner::new(self.client.clone())
     }
+
+    /// Create a message with structured output parsing (beta feature).
+    ///
+    /// This method enables type-safe structured outputs using JSON schema.
+    /// The model will return JSON that conforms to the schema of type `T`,
+    /// which is automatically parsed and validated.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `T` - The type to parse the output into. Must implement `Serialize`,
+    ///   `Deserialize`, and `JsonSchema`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use serde::{Deserialize, Serialize};
+    /// use schemars::JsonSchema;
+    /// use turboclaude_protocol::types::models;
+    ///
+    /// #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+    /// struct Order {
+    ///     product_name: String,
+    ///     price: f64,
+    ///     quantity: u32,
+    /// }
+    ///
+    /// let parsed = client.beta().messages()
+    ///     .parse::<Order>()
+    ///     .model(models::CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS)
+    ///     .messages(vec![
+    ///         Message::user("Extract order from: '2 Green Tea for $5.50 each'")
+    ///     ])
+    ///     .max_tokens(1024)
+    ///     .send()
+    ///     .await?;
+    ///
+    /// let order = parsed.parsed_output()?;
+    /// println!("Product: {}, Quantity: {}", order.product_name, order.quantity);
+    /// ```
+    ///
+    /// # Important
+    ///
+    /// - Requires `schema` feature flag
+    /// - Use the structured outputs model: `CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS`
+    /// - Requires beta header `structured-outputs-2025-09-17`
+    /// - Output must be valid JSON matching the schema
+    #[cfg(feature = "schema")]
+    pub fn parse<T>(&self) -> ParseBuilder<T>
+    where
+        T: serde::Serialize + serde::de::DeserializeOwned + schemars::JsonSchema,
+    {
+        ParseBuilder::new(self.client.clone())
+    }
 }
 
 impl Resource for BetaMessages {
@@ -439,6 +492,177 @@ impl BetaTools {
 impl Resource for BetaTools {
     fn client(&self) -> &Client {
         &self.client
+    }
+}
+
+/// Builder for creating structured output requests.
+///
+/// This builder allows you to configure a message request that will parse
+/// the output into a strongly-typed structure.
+///
+/// # Type Parameters
+///
+/// * `T` - The type to parse the output into
+#[cfg(feature = "schema")]
+pub struct ParseBuilder<T> {
+    client: Client,
+    model: Option<String>,
+    messages: Vec<crate::types::MessageParam>,
+    max_tokens: u32,
+    temperature: Option<f64>,
+    top_p: Option<f64>,
+    top_k: Option<u32>,
+    stop_sequences: Vec<String>,
+    system: Option<crate::types::SystemPrompt>,
+    _phantom: std::marker::PhantomData<T>,
+}
+
+#[cfg(feature = "schema")]
+impl<T> ParseBuilder<T>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + schemars::JsonSchema,
+{
+    /// Create a new parse builder.
+    fn new(client: Client) -> Self {
+        Self {
+            client,
+            model: None,
+            messages: Vec::new(),
+            max_tokens: 1024,
+            temperature: None,
+            top_p: None,
+            top_k: None,
+            stop_sequences: Vec::new(),
+            system: None,
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Set the model to use.
+    ///
+    /// For structured outputs, you should use:
+    /// `models::CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS`
+    pub fn model(mut self, model: impl Into<String>) -> Self {
+        self.model = Some(model.into());
+        self
+    }
+
+    /// Set the messages for the conversation.
+    pub fn messages(mut self, messages: Vec<crate::types::MessageParam>) -> Self {
+        self.messages = messages;
+        self
+    }
+
+    /// Set the maximum tokens to generate.
+    pub fn max_tokens(mut self, max_tokens: u32) -> Self {
+        self.max_tokens = max_tokens;
+        self
+    }
+
+    /// Set the temperature for sampling.
+    pub fn temperature(mut self, temperature: f64) -> Self {
+        self.temperature = Some(temperature);
+        self
+    }
+
+    /// Set top_p for nucleus sampling.
+    pub fn top_p(mut self, top_p: f64) -> Self {
+        self.top_p = Some(top_p);
+        self
+    }
+
+    /// Set top_k for top-k sampling.
+    pub fn top_k(mut self, top_k: u32) -> Self {
+        self.top_k = Some(top_k);
+        self
+    }
+
+    /// Add a stop sequence.
+    pub fn stop_sequence(mut self, sequence: impl Into<String>) -> Self {
+        self.stop_sequences.push(sequence.into());
+        self
+    }
+
+    /// Set the system prompt.
+    pub fn system(mut self, system: impl Into<crate::types::SystemPrompt>) -> Self {
+        self.system = Some(system.into());
+        self
+    }
+
+    /// Send the request and get a parsed response.
+    ///
+    /// This method:
+    /// 1. Generates a JSON schema from type `T`
+    /// 2. Sends the request with the schema as `output_format`
+    /// 3. Parses the response into `ParsedBetaMessage<T>`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - No model is specified
+    /// - No messages are provided
+    /// - The API request fails
+    /// - The response cannot be parsed as JSON
+    /// - The JSON doesn't match the schema for type `T`
+    pub async fn send(self) -> crate::error::Result<crate::types::beta::ParsedBetaMessage<T>> {
+        let model = self.model.ok_or_else(|| crate::Error::InvalidRequest(
+            "Model is required for structured output requests".to_string()
+        ))?;
+
+        if self.messages.is_empty() {
+            return Err(crate::Error::InvalidRequest(
+                "At least one message is required".to_string()
+            ));
+        }
+
+        // Generate JSON schema from type T
+        let schema = crate::schema::generate_schema::<T>();
+
+        // Build the request with output_format
+        let mut request_body = serde_json::json!({
+            "model": model,
+            "max_tokens": self.max_tokens,
+            "messages": self.messages,
+            "output_format": {
+                "type": "json_schema",
+                "schema": schema
+            }
+        });
+
+        // Add optional fields
+        if let Some(temp) = self.temperature {
+            request_body["temperature"] = serde_json::json!(temp);
+        }
+        if let Some(top_p) = self.top_p {
+            request_body["top_p"] = serde_json::json!(top_p);
+        }
+        if let Some(top_k) = self.top_k {
+            request_body["top_k"] = serde_json::json!(top_k);
+        }
+        if !self.stop_sequences.is_empty() {
+            request_body["stop_sequences"] = serde_json::json!(self.stop_sequences);
+        }
+        if let Some(system) = self.system {
+            request_body["system"] = serde_json::to_value(system)?;
+        }
+
+        // Send request with structured-outputs beta header
+        debug!("Sending structured output request");
+        let message: crate::types::beta::BetaMessage = self
+            .client
+            .beta_request(
+                crate::http::Method::POST,
+                "/v1/messages",
+                "structured-outputs-2025-09-17",
+            )?
+            .body(serde_json::to_vec(&request_body)?)
+            .send()
+            .await?
+            .parse_result()?;
+
+        info!("Structured output message received successfully");
+
+        Ok(crate::types::beta::ParsedBetaMessage::new(message))
     }
 }
 
