@@ -591,7 +591,7 @@ impl BatchesRaw {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Models, Role};
+    use crate::types::{models, Role};
 
     #[test]
     fn test_messages_resource_creation() {
@@ -606,13 +606,13 @@ mod tests {
     #[test]
     fn test_messages_create_request() {
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Hello")])
             .build()
             .unwrap();
 
-        assert_eq!(request.model, Models::CLAUDE_3_5_SONNET);
+        assert_eq!(request.model, models::CLAUDE_SONNET_4_5_20250929);
         assert_eq!(request.max_tokens, 1024);
         assert_eq!(request.messages.len(), 1);
         assert_eq!(request.messages[0].role, Role::User);
@@ -621,7 +621,7 @@ mod tests {
     #[test]
     fn test_messages_create_with_system_prompt() {
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Hello")])
             .system("You are a helpful assistant")
@@ -651,7 +651,7 @@ mod tests {
         };
 
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("What's the weather?")])
             .tools(vec![tool.clone()])
@@ -670,7 +670,7 @@ mod tests {
     #[test]
     fn test_messages_stream_request() {
         let mut request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Tell me a story")])
             .build()
@@ -692,7 +692,7 @@ mod tests {
         let batch_request = BatchRequest {
             custom_id: "req-001".to_string(),
             params: MessageRequest::builder()
-                .model(Models::CLAUDE_3_5_SONNET)
+                .model(models::CLAUDE_SONNET_4_5_20250929)
                 .max_tokens(512u32)
                 .messages(vec![Message::user("Hello")])
                 .build()
@@ -741,7 +741,7 @@ mod tests {
                 text: "Hello!".to_string(),
                 citations: None,
             }],
-            model: Models::CLAUDE_3_5_SONNET.to_string(),
+            model: models::CLAUDE_SONNET_4_5_20250929.to_string(),
             stop_reason: Some(crate::types::StopReason::EndTurn),
             stop_sequence: None,
             usage: Usage {

@@ -415,10 +415,10 @@ mod tests {
 
     #[test]
     fn test_message_request_with_system_prompt() {
-        use crate::types::Models;
+        use crate::types::models;
 
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Hello")])
             .system("You are a helpful assistant")
@@ -434,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_message_request_with_tools() {
-        use crate::types::{Models, Tool};
+        use crate::types::{models, Tool};
         use serde_json::json;
 
         let tool = Tool {
@@ -453,7 +453,7 @@ mod tests {
         };
 
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Calculate 2+2")])
             .tools(vec![tool])
@@ -468,10 +468,10 @@ mod tests {
 
     #[test]
     fn test_message_request_stream_flag() {
-        use crate::types::Models;
+        use crate::types::models;
 
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_SONNET_4_5_20250929)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Hello")])
             .stream(true)
