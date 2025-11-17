@@ -93,18 +93,112 @@ impl Model {
 }
 
 /// Common model constants matching Anthropic's model IDs
+///
+/// This module provides constants for all available Claude models,
+/// organized by generation and capability tier.
 pub mod models {
-    /// Claude 3.5 Sonnet, released in October 2024.
+    // ========================================================================
+    // LATEST GENERATION - RECOMMENDED FOR PRODUCTION
+    // ========================================================================
+
+    /// Claude Sonnet 4.5 (September 2025) - **RECOMMENDED**
+    ///
+    /// Best coding model in the world. Strongest for building complex agents,
+    /// best at computer use. Excellent at following instructions and writing code.
+    ///
+    /// **Pricing:** $3 per million input tokens, $15 per million output tokens
+    ///
+    /// **Use cases:** Complex coding, agent workflows, computer use, instruction following
+    pub const CLAUDE_SONNET_4_5_20250929: &str = "claude-sonnet-4-5-20250929";
+
+    /// Claude Sonnet 4.5 with Structured Outputs (September 2025)
+    ///
+    /// Same capabilities as CLAUDE_SONNET_4_5_20250929 but optimized for
+    /// returning structured JSON outputs that conform to provided schemas.
+    ///
+    /// **Requires:** Beta header `structured-outputs-2025-09-17`
+    ///
+    /// **Use cases:** Type-safe API responses, data extraction, form filling
+    pub const CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS: &str =
+        "claude-sonnet-4-5-20250929-structured-outputs";
+
+    /// Claude Haiku 4.5 (October 2025) - **RECOMMENDED FOR SPEED**
+    ///
+    /// Small, fast model optimized for low latency. Near-frontier coding quality,
+    /// matches Sonnet 4 on coding, surpasses Sonnet 4 on some computer-use tasks.
+    ///
+    /// **Pricing:** $1 per million input tokens, $5 per million output tokens
+    ///
+    /// **Use cases:** Fast responses, cost optimization, high-volume requests
+    pub const CLAUDE_HAIKU_4_5_20251001: &str = "claude-haiku-4-5-20251001";
+
+    /// Claude Opus 4.1 (August 2025)
+    ///
+    /// Most capable model for complex reasoning and analysis. Improved agentic tasks,
+    /// coding, and reasoning. Scores 74.5% on SWE-bench Verified.
+    ///
+    /// **Pricing:** $15 per million input tokens, $75 per million output tokens
+    ///
+    /// **Use cases:** Complex analysis, research, highest-quality output
+    pub const CLAUDE_OPUS_4_1_20250805: &str = "claude-opus-4-1-20250805";
+
+    // ========================================================================
+    // CONVENIENCE ALIASES
+    // ========================================================================
+
+    /// Alias for the latest Sonnet model (currently 4.5)
+    ///
+    /// **Note:** This alias may point to different models over time as new versions release.
+    /// Use specific version constants for reproducible behavior.
+    pub const SONNET_LATEST: &str = CLAUDE_SONNET_4_5_20250929;
+
+    /// Alias for the latest Haiku model (currently 4.5)
+    pub const HAIKU_LATEST: &str = CLAUDE_HAIKU_4_5_20251001;
+
+    /// Alias for the latest Opus model (currently 4.1)
+    pub const OPUS_LATEST: &str = CLAUDE_OPUS_4_1_20250805;
+
+    /// Default model for new applications
+    pub const DEFAULT: &str = CLAUDE_SONNET_4_5_20250929;
+
+    // ========================================================================
+    // LEGACY GENERATION (backward compatibility)
+    // ========================================================================
+
+    /// Claude 3.5 Sonnet (October 2024)
+    ///
+    /// **Deprecated:** Use [`CLAUDE_SONNET_4_5_20250929`] instead for better performance.
+    #[deprecated(since = "0.2.0", note = "Use CLAUDE_SONNET_4_5_20250929 instead")]
     pub const CLAUDE_3_5_SONNET_20241022: &str = "claude-3-5-sonnet-20241022";
-    /// Claude 3.5 Haiku, released in October 2024.
+
+    /// Claude 3.5 Haiku (October 2024)
+    ///
+    /// **Deprecated:** Use [`CLAUDE_HAIKU_4_5_20251001`] instead for better performance.
+    #[deprecated(since = "0.2.0", note = "Use CLAUDE_HAIKU_4_5_20251001 instead")]
     pub const CLAUDE_3_5_HAIKU_20241022: &str = "claude-3-5-haiku-20241022";
-    /// Claude Sonnet 4.5, released in May 2025.
+
+    /// Claude Sonnet 4.5 (May 2025)
+    ///
+    /// **Deprecated:** Use [`CLAUDE_SONNET_4_5_20250929`] instead for latest improvements.
+    #[deprecated(since = "0.2.0", note = "Use CLAUDE_SONNET_4_5_20250929 instead")]
     pub const CLAUDE_SONNET_4_5_20250514: &str = "claude-sonnet-4-5-20250514";
-    /// Claude 3 Opus, released in February 2025.
-    pub const CLAUDE_3_OPUS_20250219: &str = "claude-3-opus-20250219";
-    /// Claude 3 Sonnet, released in February 2024.
+
+    /// Claude 3 Opus (February 2024)
+    ///
+    /// **Deprecated:** Use [`CLAUDE_OPUS_4_1_20250805`] instead.
+    #[deprecated(since = "0.2.0", note = "Use CLAUDE_OPUS_4_1_20250805 instead")]
+    pub const CLAUDE_3_OPUS_20240229: &str = "claude-3-opus-20240229";
+
+    /// Claude 3 Sonnet (February 2024)
+    ///
+    /// **Deprecated:** Use [`CLAUDE_SONNET_4_5_20250929`] instead.
+    #[deprecated(since = "0.2.0", note = "Use CLAUDE_SONNET_4_5_20250929 instead")]
     pub const CLAUDE_3_SONNET_20240229: &str = "claude-3-sonnet-20240229";
-    /// Claude 3 Haiku, released in March 2024.
+
+    /// Claude 3 Haiku (March 2024)
+    ///
+    /// **Deprecated:** Use [`CLAUDE_HAIKU_4_5_20251001`] instead.
+    #[deprecated(since = "0.2.0", note = "Use CLAUDE_HAIKU_4_5_20251001 instead")]
     pub const CLAUDE_3_HAIKU_20240307: &str = "claude-3-haiku-20240307";
 }
 
