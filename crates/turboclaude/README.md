@@ -17,6 +17,7 @@ Rust SDK for Anthropic's Claude API with support for multi-cloud providers (AWS 
 - Messages API with streaming
 - Batch processing
 - Tool use and function calling
+- Structured outputs (beta) with type-safe JSON parsing
 - Prompt caching
 - Document and PDF analysis
 - Vision capabilities
@@ -74,6 +75,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Structured Outputs (Beta)
+
+Get type-safe JSON responses that match a predefined schema:
+
+```rust
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use turboclaude::{Client, Message};
+use turboclaude_protocol::types::models;
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+struct Order {
+    product_name: String,
+    price: f64,
+    quantity: u32,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new("sk-ant-...");
+
+    // Use .parse::<T>() for type-safe structured outputs
+    let parsed = client
+        .beta()
+        .messages()
+        .parse::<Order>()
+        .model(models::CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS.to_string())
+        .messages(vec![Message::user(
+            "Extract order: '3 Green Tea boxes at $15.99 each'"
+        )])
+        .max_tokens(1024)
+        .send()
+        .await?;
+
+    // Automatically parsed and validated!
+    let order = parsed.parsed_output()?;
+    println!("Product: {}, Price: ${}, Qty: {}",
+        order.product_name, order.price, order.quantity);
+
+    Ok(())
+}
+```
+
+**Requirements:**
+- Enable the `schema` feature in Cargo.toml
+- Use the structured outputs model: `CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS`
+- Derive `Serialize`, `Deserialize`, and `JsonSchema` for your output type
+
+See `examples/structured_outputs.rs` for more examples.
+
 ## Multi-Cloud Usage
 
 ### AWS Bedrock
@@ -116,7 +167,7 @@ Enable optional functionality via Cargo features:
 
 ```toml
 [dependencies]
-turboclaude = { version = "0.1", features = ["bedrock", "vertex", "schema"] }
+turboclaude = { version = "0.2", features = ["bedrock", "vertex", "schema"] }
 ```
 
 Available features:
@@ -146,6 +197,7 @@ Check the `examples/` directory for:
 - `basic.rs` - Simple message sending
 - `streaming.rs` - Real-time streaming
 - `tools.rs` - Tool use and function calling
+- `structured_outputs.rs` - Type-safe JSON parsing (requires `schema` feature)
 - `bedrock_basic.rs` - AWS Bedrock usage
 - `vertex_basic.rs` - Google Vertex AI usage
 - And more...

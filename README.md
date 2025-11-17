@@ -11,7 +11,7 @@ Rust SDK for Anthropic's Claude API that covers the same features as the officia
 ```bash
 # Add to your Cargo.toml
 [dependencies]
-turboclaude = "0.1"
+turboclaude = "0.2"
 
 # Set your API key
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -41,29 +41,29 @@ Coming from Python? Here's the mapping to find the right TurboClaude crate:
 **Just need to send messages?**
 ```toml
 [dependencies]
-turboclaude = "0.1"
+turboclaude = "0.2"
 ```
 
 **Building an AI agent with custom behavior?**
 ```toml
 [dependencies]
-turboclaudeagent = "0.1"
-turboclaude-skills = "0.1"
+turboclaudeagent = "0.2"
+turboclaude-skills = "0.2"
 ```
 
 **Integrating with Model Context Protocol servers?**
 ```toml
 [dependencies]
-turboclaude = { version = "0.1", features = ["mcp"] }
-turboclaude-mcp = "0.1"
+turboclaude = { version = "0.2", features = ["mcp"] }
+turboclaude-mcp = "0.2"
 ```
 
 **Everything (AWS Bedrock, Vertex AI, all features)?**
 ```toml
 [dependencies]
-turboclaude = { version = "0.1", features = ["bedrock", "vertex", "schema", "mcp", "trace"] }
-turboclaudeagent = "0.1"
-turboclaude-skills = "0.1"
+turboclaude = { version = "0.2", features = ["bedrock", "vertex", "schema", "mcp", "trace"] }
+turboclaudeagent = "0.2"
+turboclaude-skills = "0.2"
 ```
 
 ## Architecture Goals
