@@ -8,16 +8,18 @@ pub use batch::*;
 pub use cache::*;
 pub use content::*;
 pub use message::*;
-pub use model::*;
 pub use tool::*;
 pub use usage::*;
+
+// Re-export model types from protocol crate
+pub use turboclaude_protocol::types::models;
+pub use turboclaude_protocol::types::Model;
 
 // Submodules
 pub mod batch;
 pub mod cache;
 pub mod content;
 pub mod message;
-pub mod model;
 pub mod tool;
 pub mod usage;
 
@@ -145,7 +147,7 @@ mod tests {
     #[test]
     fn test_message_request_with_cached_system() {
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_3_5_SONNET_20241022)
             .max_tokens(1024u32)
             .messages(vec![Message::user("Hello")])
             .system(vec![
@@ -222,7 +224,7 @@ mod tests {
     #[test]
     fn test_message_request_with_document() {
         let request = MessageRequest::builder()
-            .model(Models::CLAUDE_3_5_SONNET)
+            .model(models::CLAUDE_3_5_SONNET_20241022)
             .max_tokens(1024u32)
             .messages(vec![MessageParam {
                 role: Role::User,
