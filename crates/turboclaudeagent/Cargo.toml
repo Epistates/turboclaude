@@ -21,9 +21,9 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 futures = "0.3"
 
-turboclaude-protocol = { version = "0.1.0", path = "../turboclaude-protocol" }
-turboclaude-transport = { version = "0.1.0", path = "../turboclaude-transport" }
-turboclaude-skills = { version = "0.1.0", path = "../turboclaude-skills", optional = true }
+turboclaude-protocol = { version = "0.2.0", path = "../turboclaude-protocol" }
+turboclaude-transport = { version = "0.2.0", path = "../turboclaude-transport" }
+turboclaude-skills = { version = "0.2.0", path = "../turboclaude-skills", optional = true }
 
 # For subprocess management
 nix = { version = "0.28", features = ["process"] }

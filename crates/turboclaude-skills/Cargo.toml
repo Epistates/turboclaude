@@ -13,7 +13,7 @@ categories = ["api-bindings", "development-tools"]
 
 [dependencies]
 # Core turboclaude
-turboclaude-protocol = { path = "../turboclaude-protocol", version = "0.1.0" }
+turboclaude-protocol = { path = "../turboclaude-protocol", version = "0.2.0" }
 
 # Async runtime
 tokio = { version = "1", features = ["fs", "process", "time", "sync", "rt", "rt-multi-thread", "macros", "io-util"] }

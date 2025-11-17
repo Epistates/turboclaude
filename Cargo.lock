@@ -3182,7 +3182,7 @@ dependencies = [
 
 [[package]]
 name = "rmcp"
-version = "0.8.3"
+version = "0.8.4"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -3203,7 +3203,7 @@ dependencies = [
 
 [[package]]
 name = "rmcp-macros"
-version = "0.8.3"
+version = "0.8.4"
 dependencies = [
  "darling 0.21.3",
  "proc-macro2",
@@ -4320,7 +4320,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "turboclaude"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "assert_matches",
@@ -4373,7 +4373,7 @@ dependencies = [
 
 [[package]]
 name = "turboclaude-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "proptest",
@@ -4389,7 +4389,7 @@ dependencies = [
 
 [[package]]
 name = "turboclaude-integration-tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rstest",
  "serde_json",
@@ -4404,7 +4404,7 @@ dependencies = [
 
 [[package]]
 name = "turboclaude-mcp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4418,15 +4418,15 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tracing",
- "turbomcp-client 2.1.2",
- "turbomcp-protocol 2.1.2",
- "turbomcp-transport 2.1.2",
+ "turbomcp-client 2.2.3",
+ "turbomcp-protocol 2.2.3",
+ "turbomcp-transport 2.2.3",
  "uuid",
 ]
 
 [[package]]
 name = "turboclaude-protocol"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "regex",
@@ -4439,7 +4439,7 @@ dependencies = [
 
 [[package]]
 name = "turboclaude-skills"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4459,7 +4459,7 @@ dependencies = [
 
 [[package]]
 name = "turboclaude-transport"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4487,7 +4487,7 @@ dependencies = [
 
 [[package]]
 name = "turboclaudeagent"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4532,7 +4532,7 @@ dependencies = [
 
 [[package]]
 name = "turbomcp-client"
-version = "2.1.2"
+version = "2.2.3"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4543,8 +4543,8 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "tracing",
- "turbomcp-protocol 2.1.2",
- "turbomcp-transport 2.1.2",
+ "turbomcp-protocol 2.2.3",
+ "turbomcp-transport 2.2.3",
  "uuid",
 ]
 
@@ -4584,7 +4584,7 @@ dependencies = [
 
 [[package]]
 name = "turbomcp-protocol"
-version = "2.1.2"
+version = "2.2.3"
 dependencies = [
  "ahash",
  "arc-swap",
@@ -4645,7 +4645,7 @@ dependencies = [
 
 [[package]]
 name = "turbomcp-transport"
-version = "2.1.2"
+version = "2.2.3"
 dependencies = [
  "ahash",
  "anyhow",
@@ -4666,7 +4666,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "turbomcp-protocol 2.1.2",
+ "turbomcp-protocol 2.2.3",
  "url",
  "uuid",
 ]

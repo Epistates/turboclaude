@@ -26,8 +26,8 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 
 # Workspace-local dependencies (not in workspace.dependencies yet)
-turboclaude-protocol = { version = "0.1.0", path = "../turboclaude-protocol" }
-turboclaude-transport = { version = "0.1.0", path = "../turboclaude-transport" }
+turboclaude-protocol = { version = "0.2.0", path = "../turboclaude-protocol" }
+turboclaude-transport = { version = "0.2.0", path = "../turboclaude-transport" }
 
 # HTTP client
 reqwest = { version = "0.12.23", features = ["json", "stream", "rustls-tls", "multipart"] }

@@ -128,14 +128,14 @@ impl<T: Transport + 'static> McpClient for TurbomcpAdapter<T> {
                 }
             })?;
 
-        // Extract is_error from result if it exists
-        let is_error = result
-            .get("is_error")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
+        // Extract content and is_error from CallToolResult
+        let content_value = serde_json::to_value(&result.content)
+            .map_err(|e| McpError::ToolExecutionError(format!("Failed to serialize tool result: {}", e)))?;
+
+        let is_error = result.is_error.unwrap_or(false);
 
         Ok(ToolResult {
-            content: result,
+            content: content_value,
             is_error,
         })
     }
