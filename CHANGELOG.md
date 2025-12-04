@@ -5,9 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2025-12-04
+## [0.2.0] - 2025-12-04
 
 ### Added
+
+- **Full Python SDK Feature Parity**
+  - AWS Bedrock provider support
+  - Google Vertex AI provider support
+  - Structured outputs with JSON schema validation
+  - Extended thinking (chain-of-thought reasoning)
+  - Context management for conversation optimization
+  - Tool runner with automatic tool execution loops
+  - Message batching API
+  - Streaming responses with Server-Sent Events
+  - Comprehensive error handling with retry logic
+  - Connection pooling and rate limiting
+  - Proxy support (HTTP, HTTPS, SOCKS5)
 
 - **Microsoft Azure Foundry Provider** (`providers::foundry`)
   - Complete Azure Foundry integration for accessing Claude models through Microsoft Azure
@@ -55,23 +68,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed non-exhaustive pattern matches for new `ContextManagementEdit` variants
 - Fixed doc tests that referenced outdated type signatures
 - Disabled integration tests that accessed private implementation details
-
-## [0.2.0] - 2025-11-XX
-
-### Added
-
-- Initial release with full Python SDK feature parity
-- AWS Bedrock provider support
-- Google Vertex AI provider support
-- Structured outputs with JSON schema validation
-- Extended thinking (chain-of-thought reasoning)
-- Context management for conversation optimization
-- Tool runner with automatic tool execution loops
-- Message batching API
-- Streaming responses with Server-Sent Events
-- Comprehensive error handling with retry logic
-- Connection pooling and rate limiting
-- Proxy support (HTTP, HTTPS, SOCKS5)
 
 ## [0.1.0] - 2025-10-XX
 

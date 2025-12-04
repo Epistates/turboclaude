@@ -22,14 +22,14 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 
 # MCP protocol (for type definitions)
-turbomcp-protocol = { path = "../../../turbomcp/crates/turbomcp-protocol" }
-turbomcp-transport = { path = "../../../turbomcp/crates/turbomcp-transport" }
+turbomcp-protocol = "2.3.0-rc"
+turbomcp-transport = "2.3.0-rc"
 
 # Optional: For TurboMCP adapter
-turbomcp-client = { path = "../../../turbomcp/crates/turbomcp-client", optional = true }
+turbomcp-client = { version = "2.3.0-rc", optional = true }
 
 # Optional: For Official Rust SDK adapter
-rmcp = { path = "../../../reference/rust-sdk/crates/rmcp", optional = true, features = ["client", "transport-child-process"] }
+rmcp = { version = "0.10.0", optional = true, features = ["client", "transport-child-process"] }
 
 # Futures for async trait support
 futures = "0.3"
