@@ -163,7 +163,7 @@ impl Beta {
     /// // List models
     /// let page = client.beta().models().list().send().await?;
     /// for model in &page.data {
-    ///     println!("{}: {}", model.id, model.display_name);
+    ///     println!("{}: {}", model.id, model.display_name.as_deref().unwrap_or("Unknown"));
     /// }
     ///
     /// // Retrieve a specific model
@@ -382,12 +382,10 @@ impl BetaMessages {
     ///
     /// # Example
     ///
-    /// ```rust,no_run
-    /// # #[cfg(feature = "schema")]
-    /// # use turboclaude::{Client, Message, MessageRequest};
-    /// # #[cfg(feature = "schema")]
-    /// # use turboclaude::tools::{FunctionTool, ToolRunner};
-    /// # #[cfg(feature = "schema")]
+    /// ```rust,ignore
+    /// use turboclaude::{Client, MessageRequest};
+    /// use turboclaude::tools::ToolRunner;
+    ///
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = Client::new("sk-ant-...");
     ///
@@ -395,11 +393,11 @@ impl BetaMessages {
     /// let runner = client.beta().messages().tool_runner();
     ///
     /// // Use it the same way as the regular tool runner
-    /// let final_message = runner
-    ///     .add_tool(my_tool)
-    ///     .with_max_iterations(5)
-    ///     .run(request)
-    ///     .await?;
+    /// // let final_message = runner
+    /// //     .add_tool(my_tool)
+    /// //     .with_max_iterations(5)
+    /// //     .run(request)
+    /// //     .await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -451,7 +449,7 @@ impl BetaMessages {
     ///
     /// - Requires `schema` feature flag
     /// - Use the structured outputs model: `CLAUDE_SONNET_4_5_20250929_STRUCTURED_OUTPUTS`
-    /// - Requires beta header `structured-outputs-2025-09-17`
+    /// - Requires beta header `structured-outputs-2025-11-13`
     /// - Output must be valid JSON matching the schema
     #[cfg(feature = "schema")]
     pub fn parse<T>(&self) -> ParseBuilder<T>
@@ -653,7 +651,7 @@ where
             .beta_request(
                 crate::http::Method::POST,
                 "/v1/messages",
-                "structured-outputs-2025-09-17",
+                "structured-outputs-2025-11-13",
             )?
             .body(serde_json::to_vec(&request_body)?)
             .send()

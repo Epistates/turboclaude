@@ -99,6 +99,16 @@ pub struct AssistantMessage {
     /// Cache usage information
     #[serde(default, skip_serializing_if = "is_zero_cache")]
     pub cache_usage: CacheUsage,
+
+    /// Parent tool use ID for messages in tool execution context
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_tool_use_id: Option<String>,
+
+    /// Error type if the message generation failed.
+    ///
+    /// When this is set, the message may be incomplete or contain error information.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<AssistantMessageError>,
 }
 
 /// A system message from the Claude CLI
@@ -171,6 +181,51 @@ pub enum MessageRole {
 
     /// Assistant message
     Assistant,
+}
+
+/// Error type for assistant messages when an error occurred during generation.
+///
+/// Indicates the category of error that prevented successful message completion.
+/// This enum matches the error types from the Claude Agent SDK.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AssistantMessageError {
+    /// Authentication failed (invalid API key, etc.)
+    AuthenticationFailed,
+
+    /// Billing error (exceeded quota, payment issue, etc.)
+    BillingError,
+
+    /// Rate limit exceeded
+    RateLimit,
+
+    /// Invalid request parameters
+    InvalidRequest,
+
+    /// Server-side error from the API
+    ServerError,
+
+    /// Unknown or unclassified error
+    Unknown,
+}
+
+impl AssistantMessageError {
+    /// Returns a human-readable description of the error type.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::AuthenticationFailed => "Authentication failed - check your API key",
+            Self::BillingError => "Billing error - check your account quota",
+            Self::RateLimit => "Rate limit exceeded - slow down requests",
+            Self::InvalidRequest => "Invalid request parameters",
+            Self::ServerError => "Server error from the API",
+            Self::Unknown => "Unknown error occurred",
+        }
+    }
+
+    /// Returns whether this error is retryable.
+    pub fn is_retryable(&self) -> bool {
+        matches!(self, Self::RateLimit | Self::ServerError)
+    }
 }
 
 /// Request to create a message
@@ -308,7 +363,37 @@ impl AssistantMessage {
             created_at: Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
             usage,
             cache_usage: CacheUsage::default(),
+            parent_tool_use_id: None,
+            error: None,
         }
+    }
+
+    /// Create an error message with the specified error type.
+    pub fn with_error(
+        model: impl Into<String>,
+        content: Vec<ContentBlock>,
+        usage: Usage,
+        error: AssistantMessageError,
+    ) -> Self {
+        let mut msg = Self::new(model, content, usage);
+        msg.error = Some(error);
+        msg
+    }
+
+    /// Set the parent tool use ID.
+    pub fn set_parent_tool_use_id(mut self, id: impl Into<String>) -> Self {
+        self.parent_tool_use_id = Some(id.into());
+        self
+    }
+
+    /// Check if this message has an error.
+    pub fn has_error(&self) -> bool {
+        self.error.is_some()
+    }
+
+    /// Check if this message's error is retryable.
+    pub fn is_retryable(&self) -> bool {
+        self.error.map_or(false, |e| e.is_retryable())
     }
 }
 
@@ -439,5 +524,80 @@ mod tests {
         let json = serde_json::to_string(&msg).unwrap();
         let deserialized: Message = serde_json::from_str(&json).unwrap();
         assert_eq!(msg, deserialized);
+    }
+
+    #[test]
+    fn test_assistant_message_error_serialization() {
+        // Test all variants serialize correctly
+        let errors = vec![
+            (AssistantMessageError::AuthenticationFailed, "\"authentication_failed\""),
+            (AssistantMessageError::BillingError, "\"billing_error\""),
+            (AssistantMessageError::RateLimit, "\"rate_limit\""),
+            (AssistantMessageError::InvalidRequest, "\"invalid_request\""),
+            (AssistantMessageError::ServerError, "\"server_error\""),
+            (AssistantMessageError::Unknown, "\"unknown\""),
+        ];
+
+        for (error, expected_json) in errors {
+            let json = serde_json::to_string(&error).unwrap();
+            assert_eq!(json, expected_json);
+
+            let deserialized: AssistantMessageError = serde_json::from_str(&json).unwrap();
+            assert_eq!(deserialized, error);
+        }
+    }
+
+    #[test]
+    fn test_assistant_message_error_retryable() {
+        assert!(!AssistantMessageError::AuthenticationFailed.is_retryable());
+        assert!(!AssistantMessageError::BillingError.is_retryable());
+        assert!(AssistantMessageError::RateLimit.is_retryable());
+        assert!(!AssistantMessageError::InvalidRequest.is_retryable());
+        assert!(AssistantMessageError::ServerError.is_retryable());
+        assert!(!AssistantMessageError::Unknown.is_retryable());
+    }
+
+    #[test]
+    fn test_assistant_message_with_error() {
+        let msg = AssistantMessage::with_error(
+            "claude-sonnet-4-5",
+            vec![ContentBlock::text("Error occurred")],
+            Usage::new(10, 5),
+            AssistantMessageError::RateLimit,
+        );
+
+        assert!(msg.has_error());
+        assert!(msg.is_retryable());
+        assert_eq!(msg.error, Some(AssistantMessageError::RateLimit));
+    }
+
+    #[test]
+    fn test_assistant_message_no_error() {
+        let msg = AssistantMessage::new(
+            "claude-sonnet-4-5",
+            vec![ContentBlock::text("Hello")],
+            Usage::new(10, 20),
+        );
+
+        assert!(!msg.has_error());
+        assert!(!msg.is_retryable());
+        assert_eq!(msg.error, None);
+    }
+
+    #[test]
+    fn test_assistant_message_error_description() {
+        assert!(!AssistantMessageError::AuthenticationFailed.description().is_empty());
+        assert!(!AssistantMessageError::RateLimit.description().is_empty());
+    }
+
+    #[test]
+    fn test_assistant_message_with_parent_tool_use() {
+        let msg = AssistantMessage::new(
+            "claude-sonnet-4-5",
+            vec![ContentBlock::text("Tool result")],
+            Usage::new(10, 20),
+        ).set_parent_tool_use_id("toolu_123");
+
+        assert_eq!(msg.parent_tool_use_id, Some("toolu_123".to_string()));
     }
 }

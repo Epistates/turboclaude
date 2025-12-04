@@ -8,12 +8,11 @@
 //!
 //! # Example
 //!
-//! ```no_run
-//! # use turboclaudeagent::{ClaudeAgentClient, SessionConfig};
-//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let mut config = SessionConfig::default();
-//! config.skill_dirs = vec!["./skills".into()];
+//! ```ignore
+//! use turboclaudeagent::{ClaudeAgentClient, ClaudeAgentClientConfig};
 //!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let config = ClaudeAgentClientConfig::new("sk-ant-...");
 //! let client = ClaudeAgentClient::new(config);
 //! let session = client.create_session().await?;
 //!

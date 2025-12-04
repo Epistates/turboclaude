@@ -92,6 +92,9 @@ mod tests {
             ContextManagementEdit::ClearThinking(p) => {
                 assert_eq!(p.param_type, "clear_thinking");
             }
+            ContextManagementEdit::ClearToolUses(_) => {
+                panic!("Expected ClearThinking edit");
+            }
         }
     }
 
@@ -109,6 +112,9 @@ mod tests {
             ContextManagementEditResponse::ClearThinking(r) => {
                 assert_eq!(r.cleared_input_tokens, 1024);
                 assert_eq!(r.cleared_thinking_turns, 3);
+            }
+            ContextManagementEditResponse::ClearToolUses(_) => {
+                panic!("Expected ClearThinking response");
             }
         }
     }

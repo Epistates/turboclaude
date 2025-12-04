@@ -1,7 +1,8 @@
 //! Context management types for controlling conversation history
 //!
 //! This module provides types for managing the conversation context, including
-//! clearing old thinking blocks and editing conversation history.
+//! clearing old thinking blocks, clearing tool use blocks, and editing
+//! conversation history.
 
 use serde::{Deserialize, Serialize};
 
@@ -12,11 +13,15 @@ use serde::{Deserialize, Serialize};
 /// # Variants
 ///
 /// * `ClearThinking` - Clear old thinking blocks from conversation history
+/// * `ClearToolUses` - Clear old tool use/result blocks from conversation history
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ContextManagementEdit {
     /// Clear thinking blocks from conversation history
     ClearThinking(super::thinking::BetaClearThinking20251015EditParam),
+
+    /// Clear tool use/result blocks from conversation history
+    ClearToolUses(super::thinking::BetaClearToolUses20250919EditParam),
 }
 
 impl ContextManagementEdit {
@@ -25,11 +30,27 @@ impl ContextManagementEdit {
         Self::ClearThinking(param)
     }
 
+    /// Create a clear tool uses edit
+    pub fn clear_tool_uses(param: super::thinking::BetaClearToolUses20250919EditParam) -> Self {
+        Self::ClearToolUses(param)
+    }
+
     /// Get the edit type as a string
     pub fn edit_type(&self) -> &'static str {
         match self {
             Self::ClearThinking(_) => "clear_thinking_20251015",
+            Self::ClearToolUses(_) => "clear_tool_uses_20250919",
         }
+    }
+
+    /// Returns true if this is a clear thinking edit
+    pub fn is_clear_thinking(&self) -> bool {
+        matches!(self, Self::ClearThinking(_))
+    }
+
+    /// Returns true if this is a clear tool uses edit
+    pub fn is_clear_tool_uses(&self) -> bool {
+        matches!(self, Self::ClearToolUses(_))
     }
 }
 
@@ -40,11 +61,15 @@ impl ContextManagementEdit {
 /// # Variants
 ///
 /// * `ClearThinking` - Response from clearing thinking blocks
+/// * `ClearToolUses` - Response from clearing tool use blocks
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ContextManagementEditResponse {
     /// Response from clearing thinking blocks
     ClearThinking(super::thinking::BetaClearThinking20251015EditResponse),
+
+    /// Response from clearing tool use blocks
+    ClearToolUses(super::thinking::BetaClearToolUses20250919EditResponse),
 }
 
 impl ContextManagementEditResponse {
@@ -55,10 +80,36 @@ impl ContextManagementEditResponse {
         Self::ClearThinking(response)
     }
 
+    /// Create a clear tool uses response
+    pub fn clear_tool_uses(
+        response: super::thinking::BetaClearToolUses20250919EditResponse,
+    ) -> Self {
+        Self::ClearToolUses(response)
+    }
+
     /// Get the response type as a string
     pub fn response_type(&self) -> &'static str {
         match self {
             Self::ClearThinking(_) => "clear_thinking_20251015",
+            Self::ClearToolUses(_) => "clear_tool_uses_20250919",
+        }
+    }
+
+    /// Returns true if this is a clear thinking response
+    pub fn is_clear_thinking(&self) -> bool {
+        matches!(self, Self::ClearThinking(_))
+    }
+
+    /// Returns true if this is a clear tool uses response
+    pub fn is_clear_tool_uses(&self) -> bool {
+        matches!(self, Self::ClearToolUses(_))
+    }
+
+    /// Get the number of cleared input tokens
+    pub fn cleared_input_tokens(&self) -> u32 {
+        match self {
+            Self::ClearThinking(r) => r.cleared_input_tokens,
+            Self::ClearToolUses(r) => r.cleared_input_tokens,
         }
     }
 }
@@ -68,6 +119,7 @@ mod tests {
     use super::*;
     use crate::types::beta::{
         BetaClearThinking20251015EditParam, BetaClearThinking20251015EditResponse,
+        BetaClearToolUses20250919EditParam, BetaClearToolUses20250919EditResponse,
     };
 
     // ===== ContextManagementEdit Tests =====
@@ -77,11 +129,8 @@ mod tests {
         let param = BetaClearThinking20251015EditParam::with_turns(5);
         let edit = ContextManagementEdit::clear_thinking(param);
 
-        match edit {
-            ContextManagementEdit::ClearThinking(_) => {
-                assert_eq!(edit.edit_type(), "clear_thinking_20251015");
-            }
-        }
+        assert!(edit.is_clear_thinking());
+        assert_eq!(edit.edit_type(), "clear_thinking_20251015");
     }
 
     #[test]
@@ -121,11 +170,8 @@ mod tests {
 
         let edit_response = ContextManagementEditResponse::clear_thinking(response);
 
-        match edit_response {
-            ContextManagementEditResponse::ClearThinking(_) => {
-                assert_eq!(edit_response.response_type(), "clear_thinking_20251015");
-            }
-        }
+        assert!(edit_response.is_clear_thinking());
+        assert_eq!(edit_response.response_type(), "clear_thinking_20251015");
     }
 
     #[test]
@@ -201,5 +247,93 @@ mod tests {
 
         // Verify
         assert_eq!(edit.edit_type(), restored.edit_type());
+    }
+
+    // ===== ClearToolUses Edit Tests =====
+
+    #[test]
+    fn test_context_management_edit_clear_tool_uses() {
+        let param = BetaClearToolUses20250919EditParam::new();
+        let edit = ContextManagementEdit::clear_tool_uses(param);
+
+        assert_eq!(edit.edit_type(), "clear_tool_uses_20250919");
+        assert!(edit.is_clear_tool_uses());
+        assert!(!edit.is_clear_thinking());
+    }
+
+    #[test]
+    fn test_context_management_edit_clear_tool_uses_with_keep() {
+        let param = BetaClearToolUses20250919EditParam::with_keep_turns(5);
+        let edit = ContextManagementEdit::clear_tool_uses(param);
+
+        assert_eq!(edit.edit_type(), "clear_tool_uses_20250919");
+    }
+
+    #[test]
+    fn test_context_management_edit_clear_tool_uses_serialization() {
+        let param = BetaClearToolUses20250919EditParam::with_keep_turns(3);
+        let edit = ContextManagementEdit::clear_tool_uses(param);
+
+        let json = serde_json::to_string(&edit).unwrap();
+        assert!(json.contains("\"type\":\"clear_tool_uses_20250919\""));
+        assert!(json.contains("\"keep_turns\":3"));
+    }
+
+    // ===== ClearToolUses Response Tests =====
+
+    #[test]
+    fn test_context_management_edit_response_clear_tool_uses() {
+        let response = BetaClearToolUses20250919EditResponse::new(2048, 10);
+        let edit_response = ContextManagementEditResponse::clear_tool_uses(response);
+
+        assert_eq!(edit_response.response_type(), "clear_tool_uses_20250919");
+        assert!(edit_response.is_clear_tool_uses());
+        assert!(!edit_response.is_clear_thinking());
+    }
+
+    #[test]
+    fn test_context_management_edit_response_cleared_tokens() {
+        let thinking_response = BetaClearThinking20251015EditResponse {
+            cleared_input_tokens: 1024,
+            cleared_thinking_turns: 3,
+            response_type: "clear_thinking_20251015".to_string(),
+        };
+        let thinking_wrapper = ContextManagementEditResponse::clear_thinking(thinking_response);
+        assert_eq!(thinking_wrapper.cleared_input_tokens(), 1024);
+
+        let tool_uses_response = BetaClearToolUses20250919EditResponse::new(2048, 10);
+        let tool_uses_wrapper = ContextManagementEditResponse::clear_tool_uses(tool_uses_response);
+        assert_eq!(tool_uses_wrapper.cleared_input_tokens(), 2048);
+    }
+
+    #[test]
+    fn test_context_management_clear_tool_uses_workflow() {
+        // Scenario: Clear all tool uses
+        let clear_param = BetaClearToolUses20250919EditParam::new();
+        let edit = ContextManagementEdit::clear_tool_uses(clear_param);
+
+        assert_eq!(edit.edit_type(), "clear_tool_uses_20250919");
+
+        // Simulate response
+        let response = BetaClearToolUses20250919EditResponse::new(5000, 20);
+        let response_wrapper = ContextManagementEditResponse::clear_tool_uses(response);
+
+        assert_eq!(response_wrapper.response_type(), "clear_tool_uses_20250919");
+        assert_eq!(response_wrapper.cleared_input_tokens(), 5000);
+    }
+
+    #[test]
+    fn test_is_helper_methods() {
+        let thinking_edit = ContextManagementEdit::clear_thinking(
+            BetaClearThinking20251015EditParam::clear_all()
+        );
+        assert!(thinking_edit.is_clear_thinking());
+        assert!(!thinking_edit.is_clear_tool_uses());
+
+        let tool_uses_edit = ContextManagementEdit::clear_tool_uses(
+            BetaClearToolUses20250919EditParam::new()
+        );
+        assert!(!tool_uses_edit.is_clear_thinking());
+        assert!(tool_uses_edit.is_clear_tool_uses());
     }
 }

@@ -50,8 +50,8 @@ pub use content::ContentBlock;
 pub use error::{ProtocolError, Result};
 pub use hooks::{ContinueReason, HookContext, HookMatcher, PermissionDecision, StopReason};
 pub use message::{
-    AssistantMessage, Message, MessageRequest, ResultMessage, StreamEvent, SystemMessage,
-    UserMessage,
+    AssistantMessage, AssistantMessageError, Message, MessageRequest, MessageRole, ResultMessage,
+    StreamEvent, SystemMessage, UserMessage,
 };
 pub use permissions::{
     AddDirectoriesUpdate, AddRulesUpdate, PermissionBehavior, PermissionRuleValue,

@@ -28,7 +28,7 @@ pub const BETA_MODELS_API: &str = "models-2024-04-01";
 ///     .await?;
 ///
 /// for model in &models.data {
-///     println!("{}: {}", model.id, model.display_name);
+///     println!("{}: {}", model.id, model.display_name.as_deref().unwrap_or("Unknown"));
 /// }
 ///
 /// // Retrieve a specific model
@@ -36,7 +36,7 @@ pub const BETA_MODELS_API: &str = "models-2024-04-01";
 ///     .retrieve("claude-3-5-sonnet-20241022")
 ///     .await?;
 ///
-/// println!("Model: {} ({})", model.display_name, model.id);
+/// println!("Model: {} ({})", model.display_name.as_deref().unwrap_or("Unknown"), model.id);
 /// # Ok(())
 /// # }
 /// ```
@@ -71,7 +71,7 @@ impl Models {
     ///     .await?;
     ///
     /// for model in &page.data {
-    ///     println!("{}: {}", model.id, model.display_name);
+    ///     println!("{}: {}", model.id, model.display_name.as_deref().unwrap_or("Unknown"));
     /// }
     ///
     /// // Get next page if available
@@ -121,7 +121,7 @@ impl Models {
     ///     .retrieve("claude-3-5-sonnet")
     ///     .await?;
     ///
-    /// println!("Model: {} ({})", model.display_name, model.id);
+    /// println!("Model: {} ({})", model.display_name.as_deref().unwrap_or("Unknown"), model.id);
     /// # Ok(())
     /// # }
     /// ```

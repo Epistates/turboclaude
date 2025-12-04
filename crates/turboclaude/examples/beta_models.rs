@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Found {} models:", models_page.data.len());
     for model in &models_page.data {
-        println!("  - {} ({})", model.display_name, model.id);
+        println!("  - {} ({})", model.display_name.as_deref().unwrap_or("Unknown"), model.id);
         println!("    Created: {}", model.created_at);
     }
 
@@ -49,8 +49,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(model) => {
             println!("Model Details:");
             println!("  ID: {}", model.id);
-            println!("  Display Name: {}", model.display_name);
-            println!("  Type: {}", model.model_type);
+            println!("  Display Name: {}", model.display_name.as_deref().unwrap_or("Unknown"));
+            println!("  Type: {}", model.r#type);
             println!("  Created: {}", model.created_at);
         }
         Err(e) => {
@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(model) => {
             println!("Alias '{}' resolved to:", alias);
             println!("  ID: {}", model.id);
-            println!("  Display Name: {}", model.display_name);
+            println!("  Display Name: {}", model.display_name.as_deref().unwrap_or("Unknown"));
         }
         Err(e) => {
             eprintln!("Error retrieving model by alias: {}", e);
@@ -82,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("First page: {} models", first_page.data.len());
     for model in &first_page.data {
-        println!("  - {}", model.display_name);
+        println!("  - {}", model.display_name.as_deref().unwrap_or("Unknown"));
     }
 
     if first_page.has_more {
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             println!("Second page: {} models", second_page.data.len());
             for model in &second_page.data {
-                println!("  - {}", model.display_name);
+                println!("  - {}", model.display_name.as_deref().unwrap_or("Unknown"));
             }
         }
     }
@@ -118,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for model_id in model_ids {
         match client.beta().models().retrieve(model_id).await {
             Ok(model) => {
-                println!("✓ {} - Available", model.display_name);
+                println!("✓ {} - Available", model.display_name.as_deref().unwrap_or("Unknown"));
             }
             Err(_) => {
                 println!("✗ {} - Not available", model_id);

@@ -197,6 +197,106 @@ pub struct BetaClearThinking20251015EditResponse {
     pub response_type: String,
 }
 
+// ============================================================================
+// Clear Tool Uses Types (2025-09-19)
+// ============================================================================
+
+/// Request to clear tool use blocks from conversation history
+///
+/// Allows selective removal of tool use and tool result blocks to reduce
+/// context window usage in long-running conversations with many tool calls.
+///
+/// # Example
+/// ```rust
+/// use turboclaude::types::beta::BetaClearToolUses20250919EditParam;
+///
+/// // Clear all tool uses
+/// let clear_param = BetaClearToolUses20250919EditParam::new();
+///
+/// // Clear but keep recent tool uses
+/// let clear_param = BetaClearToolUses20250919EditParam::with_keep_turns(5);
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BetaClearToolUses20250919EditParam {
+    /// Edit type (always "clear_tool_uses_20250919")
+    #[serde(rename = "type")]
+    pub param_type: String,
+
+    /// Number of recent assistant turns to keep tool use blocks for.
+    /// If None, all tool use blocks are cleared.
+    /// If Some(n), the n most recent turns keep their tool blocks.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keep_turns: Option<u32>,
+}
+
+impl BetaClearToolUses20250919EditParam {
+    /// Create a new clear tool uses parameter that clears all tool uses
+    pub fn new() -> Self {
+        Self {
+            param_type: "clear_tool_uses_20250919".to_string(),
+            keep_turns: None,
+        }
+    }
+
+    /// Create a clear tool uses parameter keeping specific number of recent turns
+    ///
+    /// # Arguments
+    /// * `turns` - Number of recent turns to keep tool use blocks for
+    pub fn with_keep_turns(turns: u32) -> Self {
+        Self {
+            param_type: "clear_tool_uses_20250919".to_string(),
+            keep_turns: Some(turns),
+        }
+    }
+
+    /// Check if this will clear all tool uses (no turns kept)
+    pub fn clears_all(&self) -> bool {
+        self.keep_turns.is_none()
+    }
+}
+
+impl Default for BetaClearToolUses20250919EditParam {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Response indicating successful clearing of tool use blocks
+///
+/// Provides feedback on tokens and tool uses that were cleared.
+///
+/// # Example
+/// ```json
+/// {
+///   "type": "clear_tool_uses_20250919",
+///   "cleared_input_tokens": 2048,
+///   "cleared_tool_uses": 5
+/// }
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BetaClearToolUses20250919EditResponse {
+    /// Number of input tokens cleared from tool use/result blocks
+    pub cleared_input_tokens: u32,
+
+    /// Number of tool use/result pairs cleared
+    pub cleared_tool_uses: u32,
+
+    /// Response type (always "clear_tool_uses_20250919")
+    #[serde(rename = "type")]
+    pub response_type: String,
+}
+
+impl BetaClearToolUses20250919EditResponse {
+    /// Create a new response
+    pub fn new(cleared_input_tokens: u32, cleared_tool_uses: u32) -> Self {
+        Self {
+            cleared_input_tokens,
+            cleared_tool_uses,
+            response_type: "clear_tool_uses_20250919".to_string(),
+        }
+    }
+}
+
 impl ThinkingConfig {
     /// Create a new thinking configuration with the specified token budget
     ///
@@ -431,5 +531,100 @@ mod tests {
 
         assert!(response.cleared_input_tokens > 0);
         assert!(response.cleared_thinking_turns > 0);
+    }
+
+    // ===== BetaClearToolUses20250919EditParam Tests =====
+
+    #[test]
+    fn test_beta_clear_tool_uses_new() {
+        let param = BetaClearToolUses20250919EditParam::new();
+        assert_eq!(param.param_type, "clear_tool_uses_20250919");
+        assert!(param.keep_turns.is_none());
+        assert!(param.clears_all());
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_default() {
+        let param = BetaClearToolUses20250919EditParam::default();
+        assert_eq!(param.param_type, "clear_tool_uses_20250919");
+        assert!(param.clears_all());
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_with_keep_turns() {
+        let param = BetaClearToolUses20250919EditParam::with_keep_turns(5);
+        assert_eq!(param.param_type, "clear_tool_uses_20250919");
+        assert_eq!(param.keep_turns, Some(5));
+        assert!(!param.clears_all());
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_serialization_all() {
+        let param = BetaClearToolUses20250919EditParam::new();
+        let json = serde_json::to_string(&param).unwrap();
+        assert!(json.contains("\"type\":\"clear_tool_uses_20250919\""));
+        // keep_turns should not be present when None
+        assert!(!json.contains("\"keep_turns\""));
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_serialization_with_keep() {
+        let param = BetaClearToolUses20250919EditParam::with_keep_turns(3);
+        let json = serde_json::to_string(&param).unwrap();
+        assert!(json.contains("\"type\":\"clear_tool_uses_20250919\""));
+        assert!(json.contains("\"keep_turns\":3"));
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_deserialization() {
+        let json = r#"{"type":"clear_tool_uses_20250919"}"#;
+        let param: BetaClearToolUses20250919EditParam = serde_json::from_str(json).unwrap();
+        assert_eq!(param.param_type, "clear_tool_uses_20250919");
+        assert!(param.keep_turns.is_none());
+
+        let json_with_keep = r#"{"type":"clear_tool_uses_20250919","keep_turns":7}"#;
+        let param: BetaClearToolUses20250919EditParam = serde_json::from_str(json_with_keep).unwrap();
+        assert_eq!(param.keep_turns, Some(7));
+    }
+
+    // ===== BetaClearToolUses20250919EditResponse Tests =====
+
+    #[test]
+    fn test_beta_clear_tool_uses_response_new() {
+        let response = BetaClearToolUses20250919EditResponse::new(2048, 10);
+        assert_eq!(response.cleared_input_tokens, 2048);
+        assert_eq!(response.cleared_tool_uses, 10);
+        assert_eq!(response.response_type, "clear_tool_uses_20250919");
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_response_serialization() {
+        let response = BetaClearToolUses20250919EditResponse::new(1024, 5);
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"cleared_input_tokens\":1024"));
+        assert!(json.contains("\"cleared_tool_uses\":5"));
+        assert!(json.contains("\"type\":\"clear_tool_uses_20250919\""));
+    }
+
+    #[test]
+    fn test_beta_clear_tool_uses_response_deserialization() {
+        let json = r#"{"cleared_input_tokens":512,"cleared_tool_uses":3,"type":"clear_tool_uses_20250919"}"#;
+        let response: BetaClearToolUses20250919EditResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.cleared_input_tokens, 512);
+        assert_eq!(response.cleared_tool_uses, 3);
+        assert_eq!(response.response_type, "clear_tool_uses_20250919");
+    }
+
+    #[test]
+    fn test_clear_tool_uses_workflow() {
+        // Scenario: Clear tool uses but keep last 2 turns
+        let clear_param = BetaClearToolUses20250919EditParam::with_keep_turns(2);
+        assert_eq!(clear_param.param_type, "clear_tool_uses_20250919");
+        assert!(!clear_param.clears_all());
+
+        // Simulate response
+        let response = BetaClearToolUses20250919EditResponse::new(3000, 15);
+        assert!(response.cleared_input_tokens > 0);
+        assert!(response.cleared_tool_uses > 0);
     }
 }

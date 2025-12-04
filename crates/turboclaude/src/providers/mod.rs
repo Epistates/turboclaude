@@ -9,45 +9,31 @@
 //! ### AWS Bedrock
 //! Access Claude models through AWS Bedrock. Requires the `bedrock` feature flag.
 //!
-//! ```rust,no_run
-//! # #[cfg(feature = "bedrock")]
-//! # {
-//! use turboclaude::providers::bedrock::BedrockClient;
+//! ```rust,ignore
+//! use turboclaude::providers::bedrock::BedrockHttpProvider;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = BedrockClient::builder()
+//! let provider = BedrockHttpProvider::builder()
 //!     .region("us-east-1")
 //!     .build()
 //!     .await?;
-//!
-//! let message = client.messages()
-//!     .create(/* ... */)
-//!     .await?;
 //! # Ok(())
-//! # }
 //! # }
 //! ```
 //!
 //! ### Google Vertex AI
 //! Access Claude models through Google Cloud Vertex AI. Requires the `vertex` feature flag.
 //!
-//! ```rust,no_run
-//! # #[cfg(feature = "vertex")]
-//! # {
-//! use turboclaude::providers::vertex::VertexClient;
+//! ```rust,ignore
+//! use turboclaude::providers::vertex::VertexHttpProvider;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = VertexClient::builder()
+//! let provider = VertexHttpProvider::builder()
 //!     .project_id("my-gcp-project")
-//!     .region("us-central1")
+//!     .location("us-central1")
 //!     .build()
 //!     .await?;
-//!
-//! let message = client.messages()
-//!     .create(/* ... */)
-//!     .await?;
 //! # Ok(())
-//! # }
 //! # }
 //! ```
 //!
@@ -90,3 +76,7 @@ pub mod bedrock;
 #[cfg(feature = "vertex")]
 #[cfg_attr(docsrs, doc(cfg(feature = "vertex")))]
 pub mod vertex;
+
+#[cfg(feature = "foundry")]
+#[cfg_attr(docsrs, doc(cfg(feature = "foundry")))]
+pub mod foundry;

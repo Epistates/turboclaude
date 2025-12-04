@@ -64,6 +64,7 @@ pub mod permissions;
 pub mod plugin_resolver;
 pub mod plugins;
 pub mod routing;
+pub mod sandbox;
 
 // Session module is now organized into sub-modules
 pub mod session;
@@ -87,6 +88,7 @@ pub use plugin_resolver::{DependencyResolver, PluginManifest, Version};
 pub use plugins::{Plugin, PluginLoader, PluginMetadata, SdkPluginConfig};
 pub use retry::{retry, retry_with_recovery};
 pub use routing::MessageRouter;
+pub use sandbox::{SandboxIgnoreViolations, SandboxNetworkConfig, SandboxSettings};
 pub use session::{AgentSession, QueryBuilder, SessionState};
 
 #[cfg(feature = "skills")]

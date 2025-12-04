@@ -91,7 +91,7 @@ fn main() {
             println!("  - Response type: {}", response_wrapper.response_type());
             println!(
                 "  - Cleared {} input tokens",
-                response_wrapper.cleared_input_tokens().unwrap_or(0)
+                response_wrapper.cleared_input_tokens()
             );
             println!(
                 "  - Cleared {} thinking turns\n",
@@ -164,6 +164,9 @@ impl ClearThinkingResponseExt for ContextManagementEditResponse {
             ContextManagementEditResponse::ClearThinking(response) => {
                 Some(response.cleared_input_tokens)
             }
+            ContextManagementEditResponse::ClearToolUses(response) => {
+                Some(response.cleared_input_tokens)
+            }
         }
     }
 
@@ -172,6 +175,7 @@ impl ClearThinkingResponseExt for ContextManagementEditResponse {
             ContextManagementEditResponse::ClearThinking(response) => {
                 Some(response.cleared_thinking_turns)
             }
+            ContextManagementEditResponse::ClearToolUses(_) => None,
         }
     }
 }

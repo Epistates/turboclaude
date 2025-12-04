@@ -87,9 +87,9 @@ async fn test_models_list_with_models() {
     assert_eq!(page.data.len(), 2);
     assert!(page.has_more);
     assert_eq!(page.data[0].id, "claude-3-5-sonnet-20241022");
-    assert_eq!(page.data[0].display_name, "Claude 3.5 Sonnet");
+    assert_eq!(page.data[0].display_name, Some("Claude 3.5 Sonnet".to_string()));
     assert_eq!(page.data[1].id, "claude-3-5-haiku-20241022");
-    assert_eq!(page.data[1].display_name, "Claude 3.5 Haiku");
+    assert_eq!(page.data[1].display_name, Some("Claude 3.5 Haiku".to_string()));
 }
 
 #[tokio::test]
@@ -256,8 +256,8 @@ async fn test_models_retrieve_success() {
         .expect("Failed to retrieve model");
 
     assert_eq!(model.id, "claude-3-5-sonnet-20241022");
-    assert_eq!(model.display_name, "Claude 3.5 Sonnet");
-    assert_eq!(model.model_type, "model");
+    assert_eq!(model.display_name, Some("Claude 3.5 Sonnet".to_string()));
+    assert_eq!(model.r#type, "model");
 }
 
 #[tokio::test]
@@ -290,7 +290,7 @@ async fn test_models_retrieve_alias() {
         .expect("Failed to retrieve model by alias");
 
     assert_eq!(model.id, "claude-3-5-sonnet-20241022");
-    assert_eq!(model.display_name, "Claude 3.5 Sonnet");
+    assert_eq!(model.display_name, Some("Claude 3.5 Sonnet".to_string()));
 }
 
 #[tokio::test]

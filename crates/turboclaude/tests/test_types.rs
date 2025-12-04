@@ -245,12 +245,11 @@ fn test_batch_request_serialization() {
 #[test]
 fn test_model_serialization() {
     let model = Model {
-        model_type: "model".to_string(),
+        r#type: "model".to_string(),
         id: models::CLAUDE_SONNET_4_5_20250514.to_string(),
-        display_name: "Claude 3.5 Sonnet".to_string(),
-        created_at: chrono::DateTime::parse_from_rfc3339("2024-10-22T00:00:00Z")
-            .unwrap()
-            .with_timezone(&chrono::Utc),
+        display_name: Some("Claude 3.5 Sonnet".to_string()),
+        created_at: "2024-10-22T00:00:00Z".to_string(),
+        metadata: serde_json::Map::new(),
     };
 
     let json = serde_json::to_value(&model).unwrap();
@@ -331,7 +330,7 @@ fn test_model_constants() {
     let models = vec![
         models::CLAUDE_3_5_SONNET_20241022,
         models::CLAUDE_3_5_HAIKU_20241022,
-        models::CLAUDE_3_OPUS_20250219,
+        models::CLAUDE_3_OPUS_20240229,
         models::CLAUDE_3_SONNET_20240229,
         models::CLAUDE_3_HAIKU_20240307,
         models::CLAUDE_SONNET_4_5_20250514,

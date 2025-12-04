@@ -35,6 +35,8 @@ fn create_assistant_message(text: &str, model: &str) -> ParsedMessage {
         created_at: "2025-01-01T00:00:00Z".to_string(),
         usage: Usage::new(100, 50),
         cache_usage: CacheUsage::default(),
+        error: None,
+        parent_tool_use_id: None,
     })
 }
 

@@ -2,6 +2,7 @@
 
 use crate::error::Result;
 use crate::mcp::SdkMcpServer;
+use crate::sandbox::SandboxSettings;
 use std::time::Duration;
 use turboclaude_protocol::PermissionMode;
 use turboclaude_transport::http::RetryPolicy;
@@ -55,6 +56,12 @@ pub struct SessionConfig {
 
     /// SDK MCP servers for in-process tool execution
     pub sdk_servers: Vec<SdkMcpServer>,
+
+    /// Sandbox settings for agent isolation
+    ///
+    /// Controls how the agent is isolated from the host system.
+    /// When enabled, restricts filesystem and network access.
+    pub sandbox: Option<SandboxSettings>,
 }
 
 impl ClaudeAgentClientConfig {
@@ -119,6 +126,7 @@ impl Default for SessionConfig {
             #[cfg(feature = "skills")]
             skill_dirs: vec![std::path::PathBuf::from("./skills")],
             sdk_servers: Vec::new(),
+            sandbox: None,
         }
     }
 }
@@ -210,6 +218,30 @@ impl SessionConfig {
         self.sdk_servers.push(server);
         self
     }
+
+    /// Set sandbox settings for agent isolation
+    ///
+    /// When enabled, restricts filesystem and network access to protect
+    /// the host system from unintended side effects.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use turboclaudeagent::{SessionConfig, SandboxSettings};
+    ///
+    /// let config = SessionConfig::new()
+    ///     .with_sandbox(SandboxSettings::enabled()
+    ///         .with_auto_allow_bash_if_sandboxed(true));
+    /// ```
+    pub fn with_sandbox(mut self, sandbox: SandboxSettings) -> Self {
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    /// Check if sandbox is enabled
+    pub fn is_sandboxed(&self) -> bool {
+        self.sandbox.as_ref().map_or(false, |s| s.is_enabled())
+    }
 }
 
 #[cfg(test)]
@@ -256,5 +288,38 @@ mod tests {
     fn test_concurrent_queries_minimum_one() {
         let config = SessionConfig::new().with_concurrent_queries(0);
         assert_eq!(config.max_concurrent_queries, 1); // Minimum is 1
+    }
+
+    #[test]
+    fn test_sandbox_config() {
+        let config = SessionConfig::new()
+            .with_sandbox(SandboxSettings::enabled());
+
+        assert!(config.is_sandboxed());
+        assert!(config.sandbox.is_some());
+    }
+
+    #[test]
+    fn test_sandbox_disabled_by_default() {
+        let config = SessionConfig::default();
+        assert!(!config.is_sandboxed());
+        assert!(config.sandbox.is_none());
+    }
+
+    #[test]
+    fn test_sandbox_with_settings() {
+        use crate::sandbox::SandboxNetworkConfig;
+
+        let config = SessionConfig::new()
+            .with_sandbox(
+                SandboxSettings::enabled()
+                    .with_auto_allow_bash_if_sandboxed(true)
+                    .with_network(SandboxNetworkConfig::new().with_allow_browser(true))
+            );
+
+        assert!(config.is_sandboxed());
+        let sandbox = config.sandbox.as_ref().unwrap();
+        assert_eq!(sandbox.auto_allow_bash_if_sandboxed, Some(true));
+        assert!(sandbox.network.as_ref().unwrap().is_browser_allowed());
     }
 }

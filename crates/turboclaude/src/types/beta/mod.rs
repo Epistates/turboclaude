@@ -14,7 +14,8 @@ pub use parsed::*;
 pub use skills::*;
 pub use thinking::{
     BetaAllThinkingTurnsParam, BetaClearThinking20251015EditParam,
-    BetaClearThinking20251015EditResponse, BetaThinkingTurnsParam, Keep, ThinkingBlock,
+    BetaClearThinking20251015EditResponse, BetaClearToolUses20250919EditParam,
+    BetaClearToolUses20250919EditResponse, BetaThinkingTurnsParam, Keep, ThinkingBlock,
     ThinkingConfig,
 };
 pub use tools::*;

@@ -99,6 +99,13 @@ pub struct HookMatcher {
     /// If None, matches all events. If Some, only matches events in the list.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_types: Option<Vec<String>>,
+
+    /// Timeout in seconds for all hooks in this matcher.
+    ///
+    /// If None, uses the default timeout (typically 60 seconds).
+    /// Supports sub-second precision via fractional values.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeout: Option<f64>,
 }
 
 impl HookMatcher {
@@ -138,6 +145,21 @@ impl HookMatcher {
     /// Set specific event types to match
     pub fn with_event_types(mut self, events: Vec<String>) -> Self {
         self.event_types = Some(events);
+        self
+    }
+
+    /// Set timeout in seconds for hooks in this matcher.
+    ///
+    /// Supports sub-second precision (e.g., 0.5 for 500ms).
+    /// If not set, uses the default timeout (typically 60 seconds).
+    pub fn with_timeout(mut self, seconds: f64) -> Self {
+        self.timeout = Some(seconds);
+        self
+    }
+
+    /// Set timeout from a Duration.
+    pub fn with_timeout_duration(mut self, duration: std::time::Duration) -> Self {
+        self.timeout = Some(duration.as_secs_f64());
         self
     }
 
@@ -189,11 +211,18 @@ impl HookMatcher {
     }
 
     /// Check if this is an empty matcher (matches everything)
+    ///
+    /// Note: timeout is not considered for "emptiness" since it doesn't affect matching.
     pub fn is_empty(&self) -> bool {
         self.tool_name.is_none()
             && self.tool_name_regex.is_none()
             && self.required_input_fields.is_none()
             && self.event_types.is_none()
+    }
+
+    /// Get the timeout for this matcher, or the default if not set.
+    pub fn timeout_or_default(&self) -> f64 {
+        self.timeout.unwrap_or(60.0)
     }
 }
 
@@ -473,5 +502,60 @@ mod tests {
 
         let context = HookContext::new("PreToolUse").with_tool_name("Write");
         assert!(matcher.matches(&context));
+    }
+
+    #[test]
+    fn test_hook_matcher_timeout() {
+        // Default timeout
+        let matcher = HookMatcher::new();
+        assert_eq!(matcher.timeout, None);
+        assert_eq!(matcher.timeout_or_default(), 60.0);
+
+        // Custom timeout
+        let matcher = HookMatcher::new().with_timeout(30.0);
+        assert_eq!(matcher.timeout, Some(30.0));
+        assert_eq!(matcher.timeout_or_default(), 30.0);
+
+        // Sub-second timeout
+        let matcher = HookMatcher::new().with_timeout(0.5);
+        assert_eq!(matcher.timeout, Some(0.5));
+        assert_eq!(matcher.timeout_or_default(), 0.5);
+    }
+
+    #[test]
+    fn test_hook_matcher_timeout_duration() {
+        use std::time::Duration;
+
+        let matcher = HookMatcher::new().with_timeout_duration(Duration::from_secs(45));
+        assert_eq!(matcher.timeout, Some(45.0));
+
+        let matcher = HookMatcher::new().with_timeout_duration(Duration::from_millis(500));
+        assert_eq!(matcher.timeout, Some(0.5));
+    }
+
+    #[test]
+    fn test_hook_matcher_timeout_serialization() {
+        let matcher = HookMatcher::new()
+            .with_tool_name("Bash")
+            .with_timeout(30.5);
+
+        let json = serde_json::to_string(&matcher).unwrap();
+        assert!(json.contains("\"timeout\":30.5"));
+
+        let deserialized: HookMatcher = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.timeout, Some(30.5));
+    }
+
+    #[test]
+    fn test_hook_matcher_timeout_not_affects_empty() {
+        // Timeout alone doesn't make matcher non-empty
+        let matcher = HookMatcher::new().with_timeout(30.0);
+        assert!(matcher.is_empty());
+
+        // But other fields do
+        let matcher = HookMatcher::new()
+            .with_timeout(30.0)
+            .with_tool_name("Bash");
+        assert!(!matcher.is_empty());
     }
 }

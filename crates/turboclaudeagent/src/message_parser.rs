@@ -209,6 +209,8 @@ fn parse_assistant_message(data: Value) -> Result<ParsedMessage, MessageParseErr
         created_at: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
         usage: turboclaude_protocol::types::Usage::new(0, 0),
         cache_usage: turboclaude_protocol::types::CacheUsage::default(),
+        parent_tool_use_id: None,
+        error: None,
     };
 
     Ok(ParsedMessage::Assistant(assistant_msg))
