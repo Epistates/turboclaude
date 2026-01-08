@@ -393,7 +393,7 @@ impl AssistantMessage {
 
     /// Check if this message's error is retryable.
     pub fn is_retryable(&self) -> bool {
-        self.error.map_or(false, |e| e.is_retryable())
+        self.error.is_some_and(|e| e.is_retryable())
     }
 }
 

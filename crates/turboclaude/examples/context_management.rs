@@ -153,6 +153,7 @@ fn main() {
 }
 
 // Helper trait for easier access to response fields
+#[allow(dead_code)]
 trait ClearThinkingResponseExt {
     fn cleared_input_tokens(&self) -> Option<u32>;
     fn cleared_thinking_turns(&self) -> Option<u32>;

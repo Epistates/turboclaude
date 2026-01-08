@@ -64,7 +64,7 @@ async fn test_partial_message_events() {
         println!("  {}. {}", i + 1, event);
     }
 
-    assert!(events.len() > 0, "Should have received at least one event");
+    assert!(!events.is_empty(), "Should have received at least one event");
     println!("✅ TEST PASSED: Partial message events received");
 }
 

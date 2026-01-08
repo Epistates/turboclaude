@@ -36,23 +36,23 @@ impl Version {
 
     /// Check if this version matches a constraint (e.g., "^1.0.0", "1.2.3")
     pub fn matches(&self, constraint: &str) -> bool {
-        if constraint.starts_with('^') {
+        if let Some(stripped) = constraint.strip_prefix('^') {
             // Caret: compatible with version (same major)
-            match Version::parse(&constraint[1..]) {
+            match Version::parse(stripped) {
                 Ok(target) => self.major == target.major && self >= &target,
                 Err(_) => false,
             }
-        } else if constraint.starts_with('~') {
+        } else if let Some(stripped) = constraint.strip_prefix('~') {
             // Tilde: patch-level changes (same major.minor)
-            match Version::parse(&constraint[1..]) {
+            match Version::parse(stripped) {
                 Ok(target) => {
                     self.major == target.major && self.minor == target.minor && self >= &target
                 }
                 Err(_) => false,
             }
-        } else if constraint.starts_with('=') {
+        } else if let Some(stripped) = constraint.strip_prefix('=') {
             // Exact version
-            match Version::parse(&constraint[1..]) {
+            match Version::parse(stripped) {
                 Ok(target) => self == &target,
                 Err(_) => false,
             }

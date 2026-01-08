@@ -85,23 +85,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("  - {}", model.display_name.as_deref().unwrap_or("Unknown"));
     }
 
-    if first_page.has_more {
-        if let Some(last_id) = &first_page.last_id {
-            println!("\nFetching next page after '{}'...", last_id);
+    if first_page.has_more && let Some(last_id) = &first_page.last_id {
+        println!("\nFetching next page after '{}'...", last_id);
 
-            let second_page = client
-                .beta()
-                .models()
-                .list()
-                .after(last_id)
-                .limit(3)
-                .send()
-                .await?;
+        let second_page = client
+            .beta()
+            .models()
+            .list()
+            .after(last_id)
+            .limit(3)
+            .send()
+            .await?;
 
-            println!("Second page: {} models", second_page.data.len());
-            for model in &second_page.data {
-                println!("  - {}", model.display_name.as_deref().unwrap_or("Unknown"));
-            }
+        println!("Second page: {} models", second_page.data.len());
+        for model in &second_page.data {
+            println!("  - {}", model.display_name.as_deref().unwrap_or("Unknown"));
         }
     }
 

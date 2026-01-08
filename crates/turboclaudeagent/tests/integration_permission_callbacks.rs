@@ -99,10 +99,10 @@ async fn test_permission_callback_modify_input() {
 
                 // Restrict paths to /tmp
                 if let Some(obj) = modified_input.as_object_mut() {
-                    if let Some(path) = obj.get("path").and_then(|v| v.as_str()) {
-                        if !path.starts_with("/tmp") {
-                            obj.insert("path".to_string(), json!("/tmp/safe.txt"));
-                        }
+                    if let Some(path) = obj.get("path").and_then(|v| v.as_str())
+                        && !path.starts_with("/tmp")
+                    {
+                        obj.insert("path".to_string(), json!("/tmp/safe.txt"));
                     }
                     obj.insert("readonly".to_string(), json!(true));
                 }
@@ -265,7 +265,7 @@ async fn test_permission_response_serialization() {
 
     // Verify roundtrip
     let deserialized: PermissionResponse = serde_json::from_str(&json).unwrap();
-    assert_eq!(deserialized.allow, true);
+    assert!(deserialized.allow);
     assert!(deserialized.modified_input.is_some());
 }
 
@@ -359,14 +359,12 @@ async fn test_permission_input_validation() {
         .register(|req| {
             Box::pin(async move {
                 // Require 'path' field for file operations
-                if req.tool.contains("file") {
-                    if req.input.get("path").is_none() {
-                        return Ok(PermissionResponse {
-                            allow: false,
-                            modified_input: None,
-                            reason: Some("Missing required 'path' field".to_string()),
-                        });
-                    }
+                if req.tool.contains("file") && req.input.get("path").is_none() {
+                    return Ok(PermissionResponse {
+                        allow: false,
+                        modified_input: None,
+                        reason: Some("Missing required 'path' field".to_string()),
+                    });
                 }
 
                 Ok(PermissionResponse {

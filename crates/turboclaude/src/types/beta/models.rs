@@ -57,7 +57,7 @@ mod tests {
         }"#;
 
         let page: ModelPage = serde_json::from_str(json).unwrap();
-        assert_eq!(page.has_more, true);
+        assert!(page.has_more);
         assert_eq!(
             page.first_id,
             Some("claude-3-5-sonnet-20241022".to_string())

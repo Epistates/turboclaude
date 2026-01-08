@@ -302,7 +302,7 @@ fn print_response_summary(response: &QueryResponse, query_num: usize) {
     println!("      • Total tokens: ~{}", 100 + query_num * 50);
     println!(
         "      • Thinking tokens: ~{}",
-        if query_num % 2 == 0 { 0 } else { 50 }
+        if query_num.is_multiple_of(2) { 0 } else { 50 }
     );
     println!("      • Response tokens: ~{}", 50 + query_num * 20);
 }

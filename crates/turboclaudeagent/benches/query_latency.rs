@@ -6,7 +6,6 @@
 //! Run with: cargo bench --bench query_latency
 
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use std::time::Duration;
 use turboclaude_protocol::{
     ContentBlock, Message, MessageRole, ProtocolMessage, QueryRequest, QueryResponse, Usage,
     types::StopReason,

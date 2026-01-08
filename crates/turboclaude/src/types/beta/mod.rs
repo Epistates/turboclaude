@@ -5,10 +5,13 @@
 
 // Re-export beta types
 pub use citations::*;
+pub use compaction::*;
 pub use context_management::*;
 pub use files::*;
+pub use mcp_config::*;
 pub use memory::*;
 pub use models::*;
+pub use output_config::*;
 #[cfg(feature = "schema")]
 pub use parsed::*;
 pub use skills::*;
@@ -22,6 +25,15 @@ pub use tools::*;
 
 /// Citation types for source attribution
 pub mod citations;
+
+/// Compaction control for conversation summarization
+pub mod compaction;
+
+/// MCP server configuration types
+pub mod mcp_config;
+
+/// Output configuration types
+pub mod output_config;
 
 /// Context management types for controlling conversation history
 ///

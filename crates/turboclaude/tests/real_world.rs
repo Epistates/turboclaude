@@ -55,7 +55,6 @@
 /// - Use `--test-threads=1` to avoid rate limiting
 /// - Some error tests intentionally fail API calls
 /// - All tests validate response structure and behavior
-
 mod real_world {
     pub mod common; // Common utilities
 

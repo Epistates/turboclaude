@@ -30,20 +30,15 @@ impl CacheControl {
 }
 
 /// Time-to-live options for cache control.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub enum CacheTTL {
     /// 5 minutes (default)
     #[serde(rename = "5m")]
+    #[default]
     FiveMinutes,
     /// 1 hour
     #[serde(rename = "1h")]
     OneHour,
-}
-
-impl Default for CacheTTL {
-    fn default() -> Self {
-        Self::FiveMinutes
-    }
 }
 
 /// System prompt block (can be cached).

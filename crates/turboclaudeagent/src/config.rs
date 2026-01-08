@@ -3,9 +3,72 @@
 use crate::error::Result;
 use crate::mcp::SdkMcpServer;
 use crate::sandbox::SandboxSettings;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use turboclaude::types::beta::{BetaToolParam, CompactionControl, OutputConfig};
 use turboclaude_protocol::PermissionMode;
 use turboclaude_transport::http::RetryPolicy;
+
+/// Tools option for agent configuration
+///
+/// Controls which tools are available to the agent during execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ToolsOption {
+    /// Predefined tool preset
+    Preset(ToolsPreset),
+    /// Explicit list of tools
+    List(Vec<BetaToolParam>),
+}
+
+impl Default for ToolsOption {
+    fn default() -> Self {
+        Self::Preset(ToolsPreset::AllDefaultTools)
+    }
+}
+
+/// Predefined tool presets
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolsPreset {
+    /// All available tools including beta tools
+    AllTools,
+    /// All default tools (standard set)
+    AllDefaultTools,
+    /// No tools enabled
+    None,
+}
+
+impl ToolsOption {
+    /// Create a tools option with all tools
+    pub fn all_tools() -> Self {
+        Self::Preset(ToolsPreset::AllTools)
+    }
+
+    /// Create a tools option with all default tools
+    pub fn all_default_tools() -> Self {
+        Self::Preset(ToolsPreset::AllDefaultTools)
+    }
+
+    /// Create a tools option with no tools
+    pub fn none() -> Self {
+        Self::Preset(ToolsPreset::None)
+    }
+
+    /// Create a tools option with specific tools
+    pub fn with_tools(tools: Vec<BetaToolParam>) -> Self {
+        Self::List(tools)
+    }
+
+    /// Check if this option includes any tools
+    pub fn has_tools(&self) -> bool {
+        match self {
+            Self::Preset(ToolsPreset::None) => false,
+            Self::List(tools) => !tools.is_empty(),
+            _ => true,
+        }
+    }
+}
 
 /// Configuration for ClaudeAgentClient
 #[derive(Debug, Clone)]
@@ -62,6 +125,23 @@ pub struct SessionConfig {
     /// Controls how the agent is isolated from the host system.
     /// When enabled, restricts filesystem and network access.
     pub sandbox: Option<SandboxSettings>,
+
+    /// Tools configuration for the agent
+    ///
+    /// Controls which tools are available during execution.
+    /// Defaults to all default tools.
+    pub tools: ToolsOption,
+
+    /// Output configuration for response generation
+    ///
+    /// Controls effort level and other output parameters.
+    pub output_config: Option<OutputConfig>,
+
+    /// Compaction control for conversation history
+    ///
+    /// Enables automatic summarization of conversation history
+    /// when approaching context window limits.
+    pub compaction: Option<CompactionControl>,
 }
 
 impl ClaudeAgentClientConfig {
@@ -127,6 +207,9 @@ impl Default for SessionConfig {
             skill_dirs: vec![std::path::PathBuf::from("./skills")],
             sdk_servers: Vec::new(),
             sandbox: None,
+            tools: ToolsOption::default(),
+            output_config: None,
+            compaction: None,
         }
     }
 }
@@ -240,7 +323,77 @@ impl SessionConfig {
 
     /// Check if sandbox is enabled
     pub fn is_sandboxed(&self) -> bool {
-        self.sandbox.as_ref().map_or(false, |s| s.is_enabled())
+        self.sandbox.as_ref().is_some_and(|s| s.is_enabled())
+    }
+
+    /// Set tools configuration
+    ///
+    /// Controls which tools are available during execution.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use turboclaudeagent::{SessionConfig, ToolsOption};
+    /// use turboclaude::types::beta::BetaToolParam;
+    ///
+    /// // Use all default tools
+    /// let config = SessionConfig::new()
+    ///     .with_tools(ToolsOption::all_default_tools());
+    ///
+    /// // Use specific tools
+    /// let config = SessionConfig::new()
+    ///     .with_tools(ToolsOption::with_tools(vec![
+    ///         BetaToolParam::bash(),
+    ///         BetaToolParam::text_editor(),
+    ///     ]));
+    /// ```
+    pub fn with_tools(mut self, tools: ToolsOption) -> Self {
+        self.tools = tools;
+        self
+    }
+
+    /// Set output configuration
+    ///
+    /// Controls response generation behavior including effort level.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use turboclaudeagent::SessionConfig;
+    /// use turboclaude::types::beta::OutputConfig;
+    ///
+    /// let config = SessionConfig::new()
+    ///     .with_output_config(OutputConfig::high_effort());
+    /// ```
+    pub fn with_output_config(mut self, config: OutputConfig) -> Self {
+        self.output_config = Some(config);
+        self
+    }
+
+    /// Set compaction control
+    ///
+    /// Enables automatic summarization of conversation history
+    /// when approaching context window limits.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use turboclaudeagent::SessionConfig;
+    /// use turboclaude::types::beta::CompactionControl;
+    ///
+    /// let config = SessionConfig::new()
+    ///     .with_compaction(CompactionControl::enabled()
+    ///         .with_threshold_tokens(150_000)
+    ///         .with_target_tokens(80_000));
+    /// ```
+    pub fn with_compaction(mut self, compaction: CompactionControl) -> Self {
+        self.compaction = Some(compaction);
+        self
+    }
+
+    /// Check if compaction is enabled
+    pub fn has_compaction(&self) -> bool {
+        self.compaction.as_ref().is_some_and(|c| c.enabled)
     }
 }
 
@@ -321,5 +474,74 @@ mod tests {
         let sandbox = config.sandbox.as_ref().unwrap();
         assert_eq!(sandbox.auto_allow_bash_if_sandboxed, Some(true));
         assert!(sandbox.network.as_ref().unwrap().is_browser_allowed());
+    }
+
+    #[test]
+    fn test_tools_option_preset() {
+        let preset = ToolsOption::all_tools();
+        assert!(preset.has_tools());
+
+        let none = ToolsOption::none();
+        assert!(!none.has_tools());
+    }
+
+    #[test]
+    fn test_tools_option_list() {
+        use turboclaude::types::beta::BetaToolParam;
+
+        let tools = ToolsOption::with_tools(vec![
+            BetaToolParam::bash(),
+            BetaToolParam::text_editor(),
+        ]);
+        assert!(tools.has_tools());
+
+        let empty = ToolsOption::with_tools(vec![]);
+        assert!(!empty.has_tools());
+    }
+
+    #[test]
+    fn test_config_with_tools() {
+        let config = SessionConfig::new()
+            .with_tools(ToolsOption::all_tools());
+
+        match config.tools {
+            ToolsOption::Preset(p) => assert_eq!(p, ToolsPreset::AllTools),
+            _ => panic!("Expected preset"),
+        }
+    }
+
+    #[test]
+    fn test_config_with_output() {
+        use turboclaude::types::beta::{OutputConfig, OutputEffort};
+
+        let config = SessionConfig::new()
+            .with_output_config(OutputConfig::high_effort());
+
+        let output = config.output_config.unwrap();
+        assert_eq!(output.effort, Some(OutputEffort::High));
+    }
+
+    #[test]
+    fn test_config_with_compaction() {
+        use turboclaude::types::beta::CompactionControl;
+
+        let config = SessionConfig::new()
+            .with_compaction(
+                CompactionControl::enabled()
+                    .with_threshold_tokens(150_000)
+                    .with_target_tokens(80_000)
+            );
+
+        assert!(config.has_compaction());
+        let compaction = config.compaction.unwrap();
+        assert!(compaction.enabled);
+        assert_eq!(compaction.threshold_tokens, Some(150_000));
+        assert_eq!(compaction.target_tokens, Some(80_000));
+    }
+
+    #[test]
+    fn test_compaction_disabled_by_default() {
+        let config = SessionConfig::default();
+        assert!(!config.has_compaction());
     }
 }

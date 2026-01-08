@@ -22,10 +22,11 @@ use turboclaudeagent::config::SessionConfig;
 async fn test_custom_agent_config() {
     require_api_key();
 
-    let mut config = SessionConfig::default();
-
     // Customize agent configuration
-    config.permission_mode = PermissionMode::AcceptEdits;
+    let config = SessionConfig {
+        permission_mode: PermissionMode::AcceptEdits,
+        ..Default::default()
+    };
 
     let session = create_test_session_with_config(config).await;
 
@@ -236,8 +237,10 @@ async fn test_all_permission_modes() {
     for mode in modes {
         println!("📍 Testing permission mode: {:?}", mode);
 
-        let mut config = SessionConfig::default();
-        config.permission_mode = mode;
+        let config = SessionConfig {
+            permission_mode: mode,
+            ..Default::default()
+        };
 
         let session = create_test_session_with_config(config).await;
 

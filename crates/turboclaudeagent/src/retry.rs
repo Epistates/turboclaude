@@ -10,6 +10,10 @@ use std::pin::Pin;
 /// Result type for retry operations
 pub type Result<T> = std::result::Result<T, AgentError>;
 
+/// Type alias for boxed async operation closures used in retry functions
+pub type RetryOperation<'a, T> =
+    Box<dyn FnMut() -> Pin<Box<dyn Future<Output = Result<T>> + Send + 'a>> + Send + 'a>;
+
 /// Retry an operation with automatic backoff based on error recovery guidance
 ///
 /// This function will retry the operation if:
@@ -35,9 +39,7 @@ pub type Result<T> = std::result::Result<T, AgentError>;
 /// # }
 /// ```
 pub async fn retry_with_recovery<'a, T: 'a>(
-    mut operation: Box<
-        dyn FnMut() -> Pin<Box<dyn Future<Output = Result<T>> + Send + 'a>> + Send + 'a,
-    >,
+    mut operation: RetryOperation<'a, T>,
     max_attempts: Option<u32>,
 ) -> Result<T> {
     let max_attempts = max_attempts.unwrap_or(1);
@@ -95,11 +97,7 @@ pub async fn retry_with_recovery<'a, T: 'a>(
 /// # Ok(response)
 /// # }
 /// ```
-pub async fn retry<'a, T: 'a>(
-    mut operation: Box<
-        dyn FnMut() -> Pin<Box<dyn Future<Output = Result<T>> + Send + 'a>> + Send + 'a,
-    >,
-) -> Result<T> {
+pub async fn retry<'a, T: 'a>(mut operation: RetryOperation<'a, T>) -> Result<T> {
     let mut attempt = 0;
 
     loop {

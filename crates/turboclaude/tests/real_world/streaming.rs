@@ -285,7 +285,7 @@ async fn real_world_streaming_performance() -> Result<(), Box<dyn std::error::Er
         ttfb.unwrap() < std::time::Duration::from_millis(1000),
         "TTFB should be < 1s for Haiku"
     );
-    assert!(chunk_times.len() > 0, "Should receive chunks");
+    assert!(!chunk_times.is_empty(), "Should receive chunks");
 
     Ok(())
 }

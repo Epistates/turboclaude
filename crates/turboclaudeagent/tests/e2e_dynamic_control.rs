@@ -26,8 +26,10 @@ async fn test_set_permission_mode() {
     require_api_key();
 
     // Create session with default permission mode
-    let mut config = SessionConfig::default();
-    config.permission_mode = PermissionMode::Default;
+    let config = SessionConfig {
+        permission_mode: PermissionMode::Default,
+        ..Default::default()
+    };
 
     let session = create_test_session_with_config(config).await;
 
@@ -235,7 +237,7 @@ async fn test_sequential_permission_mode_changes() {
 
     let session = create_test_session().await;
 
-    let modes = vec![
+    let modes = [
         PermissionMode::AcceptEdits,
         PermissionMode::Default,
         PermissionMode::BypassPermissions,
@@ -311,7 +313,7 @@ async fn test_invalid_model_change() {
 
     // Consume response
     let mut stream = Box::pin(session.receive_messages().await);
-    while let Some(_) = stream.next().await {}
+    while (stream.next().await).is_some() {}
 
     println!("✅ TEST PASSED: Invalid model change handled gracefully");
 }

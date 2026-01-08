@@ -31,10 +31,11 @@ impl Tool {
 }
 
 /// Tool choice preference.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ToolChoice {
     /// Let the model choose
+    #[default]
     Auto,
 
     /// Force the model to use any tool
@@ -51,11 +52,5 @@ impl ToolChoice {
     /// Create a tool choice for a specific tool.
     pub fn specific(name: impl Into<String>) -> Self {
         Self::Tool { name: name.into() }
-    }
-}
-
-impl Default for ToolChoice {
-    fn default() -> Self {
-        Self::Auto
     }
 }

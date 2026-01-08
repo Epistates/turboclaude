@@ -2,53 +2,39 @@
 //!
 //! Run with: cargo bench --bench message_performance
 
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
-use turboclaude::types::{ContentBlock, Message, MessageRequest, Role};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use turboclaude::types::{ContentBlockParam, Message, MessageParam, MessageRequest, Role};
 
 fn bench_message_request_creation(c: &mut Criterion) {
     c.bench_function("create_message_request", |b| {
-        b.iter(|| MessageRequest {
-            model: black_box("claude-3-5-sonnet-20241022".to_string()),
-            messages: black_box(vec![Message {
-                role: Role::User,
-                content: vec![ContentBlock::Text {
-                    text: "Hello, world!".to_string(),
-                }],
-            }]),
-            max_tokens: black_box(1024),
-            system: None,
-            temperature: None,
-            top_p: None,
-            top_k: None,
-            stop_sequences: None,
-            stream: None,
-            metadata: None,
-            tools: None,
-            tool_choice: None,
+        b.iter(|| {
+            MessageRequest::builder()
+                .model(black_box("claude-3-5-sonnet-20241022"))
+                .messages(black_box(vec![MessageParam {
+                    role: Role::User,
+                    content: vec![ContentBlockParam::Text {
+                        text: "Hello, world!".to_string(),
+                    }],
+                }]))
+                .max_tokens(black_box(1024u32))
+                .build()
+                .unwrap()
         });
     });
 }
 
 fn bench_message_serialization(c: &mut Criterion) {
-    let request = MessageRequest {
-        model: "claude-3-5-sonnet-20241022".to_string(),
-        messages: vec![Message {
+    let request = MessageRequest::builder()
+        .model("claude-3-5-sonnet-20241022")
+        .messages(vec![MessageParam {
             role: Role::User,
-            content: vec![ContentBlock::Text {
+            content: vec![ContentBlockParam::Text {
                 text: "Hello, world!".to_string(),
             }],
-        }],
-        max_tokens: 1024,
-        system: None,
-        temperature: None,
-        top_p: None,
-        top_k: None,
-        stop_sequences: None,
-        stream: None,
-        metadata: None,
-        tools: None,
-        tool_choice: None,
-    };
+        }])
+        .max_tokens(1024u32)
+        .build()
+        .unwrap();
 
     c.bench_function("serialize_message_request", |b| {
         b.iter(|| serde_json::to_string(&black_box(&request)).unwrap());
@@ -75,9 +61,7 @@ fn bench_message_deserialization(c: &mut Criterion) {
     }"#;
 
     c.bench_function("deserialize_message_response", |b| {
-        b.iter(|| {
-            serde_json::from_str::<turboclaude::types::MessageResponse>(black_box(json)).unwrap()
-        });
+        b.iter(|| serde_json::from_str::<Message>(black_box(json)).unwrap());
     });
 }
 
@@ -88,9 +72,9 @@ fn bench_varying_message_sizes(c: &mut Criterion) {
         group.throughput(Throughput::Bytes(*size as u64));
 
         let text = "a".repeat(*size);
-        let message = Message {
+        let message = MessageParam {
             role: Role::User,
-            content: vec![ContentBlock::Text { text }],
+            content: vec![ContentBlockParam::Text { text }],
         };
 
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, _| {

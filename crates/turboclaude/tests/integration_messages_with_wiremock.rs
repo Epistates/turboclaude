@@ -213,8 +213,7 @@ async fn test_rate_limit_handling() {
     let err_str = err.to_string().to_lowercase();
     assert!(
         err_str.contains("rate") || err_str.contains("429") || err_str.contains("limit"),
-        "Expected error message to contain rate/429/limit indicator, got: {}",
-        err.to_string()
+        "Expected error message to contain rate/429/limit indicator, got: {err}",
     );
 }
 

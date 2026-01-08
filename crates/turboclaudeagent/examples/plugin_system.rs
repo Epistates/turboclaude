@@ -132,7 +132,7 @@ fn main() {
 
     // 9. Multiple plugin scenarios
     println!("9. Managing multiple plugins:");
-    let configs = vec![
+    let configs = [
         SdkPluginConfig::local("./plugins/basic"),
         SdkPluginConfig::local("./plugins/advanced"),
         SdkPluginConfig::local("./plugins/utils"),

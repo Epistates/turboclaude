@@ -1,3 +1,5 @@
+#![allow(deprecated)] // Tests intentionally use deprecated model constants for backward compatibility
+
 use insta::assert_json_snapshot;
 use pretty_assertions::assert_eq;
 use serde_json::json;

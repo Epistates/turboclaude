@@ -3,6 +3,92 @@
 use super::CacheControl;
 use serde::{Deserialize, Serialize};
 
+/// Caller context for server tool use blocks
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ToolCaller {
+    /// Tool is called directly by the model
+    #[serde(rename = "direct")]
+    Direct,
+    /// Tool is called from code execution context
+    #[serde(rename = "code_execution_20250825")]
+    CodeExecution {
+        /// ID of the tool being executed
+        tool_id: String,
+    },
+}
+
+/// Error codes for tool search results
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolSearchErrorCode {
+    /// Invalid tool input
+    InvalidToolInput,
+    /// Tool is unavailable
+    Unavailable,
+    /// Too many requests
+    TooManyRequests,
+    /// Execution time exceeded
+    ExecutionTimeExceeded,
+}
+
+/// Error result from tool search
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchToolResultError {
+    /// Type identifier
+    #[serde(rename = "type")]
+    pub error_type: String,
+    /// Error code
+    pub error_code: ToolSearchErrorCode,
+    /// Optional error message
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
+}
+
+/// Tool reference discovered by tool search
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolReferenceBlock {
+    /// Type identifier (always "tool_reference")
+    #[serde(rename = "type")]
+    pub block_type: String,
+    /// Name of the tool being referenced
+    pub tool_name: String,
+    /// Optional cache control
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl ToolReferenceBlock {
+    /// Create a new tool reference block
+    pub fn new(tool_name: impl Into<String>) -> Self {
+        Self {
+            block_type: "tool_reference".to_string(),
+            tool_name: tool_name.into(),
+            cache_control: None,
+        }
+    }
+}
+
+/// Successful search result from tool search
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchToolSearchResultBlock {
+    /// Type identifier (always "tool_search_tool_search_result")
+    #[serde(rename = "type")]
+    pub result_type: String,
+    /// Tools discovered by search
+    pub tool_references: Vec<ToolReferenceBlock>,
+}
+
+/// Content of a tool search result (either error or success)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ToolSearchResultContent {
+    /// Error result
+    Error(ToolSearchToolResultError),
+    /// Successful search result
+    Success(ToolSearchToolSearchResultBlock),
+}
+
 /// A content block in a message.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -54,6 +140,72 @@ pub enum ContentBlock {
         /// The model's reasoning/thinking process
         thinking: String,
     },
+
+    /// Server tool use block (for web_search, web_fetch, code_execution, etc.)
+    #[serde(rename = "server_tool_use")]
+    ServerToolUse {
+        /// Unique identifier for this tool use
+        id: String,
+        /// Name of the server tool
+        name: String,
+        /// Input parameters for the tool
+        input: serde_json::Value,
+        /// Who called this tool (direct model or code execution)
+        caller: ToolCaller,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+
+    /// Tool reference block (for lazy-loaded tools discovered by search)
+    #[serde(rename = "tool_reference")]
+    ToolReference {
+        /// Name of the tool being referenced
+        tool_name: String,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+
+    /// Tool search result block
+    #[serde(rename = "tool_search_tool_result")]
+    ToolSearchToolResult {
+        /// ID of the tool use this is responding to
+        tool_use_id: String,
+        /// Result content (error or success)
+        content: ToolSearchResultContent,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+
+    /// MCP tool use block
+    #[serde(rename = "mcp_tool_use")]
+    McpToolUse {
+        /// Unique identifier for this tool use
+        id: String,
+        /// Name of the MCP tool
+        name: String,
+        /// MCP server name
+        server_name: String,
+        /// Input parameters for the tool
+        input: serde_json::Value,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+
+    /// MCP tool result block
+    #[serde(rename = "mcp_tool_result")]
+    McpToolResult {
+        /// ID of the tool use this is responding to
+        tool_use_id: String,
+        /// Result content
+        content: String,
+        /// Whether the tool call was an error
+        #[serde(skip_serializing_if = "Option::is_none")]
+        is_error: Option<bool>,
+    },
 }
 
 impl ContentBlock {
@@ -91,6 +243,42 @@ impl ContentBlock {
                 signature,
                 thinking,
             } => Some((signature.as_str(), thinking.as_str())),
+            _ => None,
+        }
+    }
+
+    /// Get server tool use if this is a server tool use block.
+    pub fn as_server_tool_use(&self) -> Option<(&str, &str, &serde_json::Value, &ToolCaller)> {
+        match self {
+            ContentBlock::ServerToolUse {
+                id,
+                name,
+                input,
+                caller,
+                ..
+            } => Some((id.as_str(), name.as_str(), input, caller)),
+            _ => None,
+        }
+    }
+
+    /// Get tool reference if this is a tool reference block.
+    pub fn as_tool_reference(&self) -> Option<&str> {
+        match self {
+            ContentBlock::ToolReference { tool_name, .. } => Some(tool_name.as_str()),
+            _ => None,
+        }
+    }
+
+    /// Get MCP tool use if this is an MCP tool use block.
+    pub fn as_mcp_tool_use(&self) -> Option<(&str, &str, &str, &serde_json::Value)> {
+        match self {
+            ContentBlock::McpToolUse {
+                id,
+                name,
+                server_name,
+                input,
+                ..
+            } => Some((id.as_str(), name.as_str(), server_name.as_str(), input)),
             _ => None,
         }
     }
@@ -140,6 +328,44 @@ pub enum ContentBlockParam {
         /// Optional context about the document
         #[serde(skip_serializing_if = "Option::is_none")]
         context: Option<String>,
+    },
+
+    /// Tool reference parameter (for lazy-loaded tools)
+    #[serde(rename = "tool_reference")]
+    ToolReference {
+        /// Name of the tool being referenced
+        tool_name: String,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+
+    /// Tool search result parameter
+    #[serde(rename = "tool_search_tool_result")]
+    ToolSearchToolResult {
+        /// ID of the tool use this is responding to
+        tool_use_id: String,
+        /// Result content (error or success)
+        content: ToolSearchResultContent,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+
+    /// MCP tool result parameter
+    #[serde(rename = "mcp_tool_result")]
+    McpToolResult {
+        /// ID of the tool use this is responding to
+        tool_use_id: String,
+        /// Result content
+        #[serde(skip_serializing_if = "Option::is_none")]
+        content: Option<String>,
+        /// Whether the tool call was an error
+        #[serde(skip_serializing_if = "Option::is_none")]
+        is_error: Option<bool>,
+        /// Optional cache control
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
     },
 }
 

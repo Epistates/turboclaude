@@ -27,6 +27,7 @@ pub mod usage;
 pub mod beta;
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
 

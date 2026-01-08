@@ -226,7 +226,7 @@ async fn test_filter_system_messages_only() {
     let mut filtered = Box::pin(filtered);
 
     let mut count = 0;
-    let expected_subtypes = vec!["initialize", "status", "shutdown"];
+    let expected_subtypes = ["initialize", "status", "shutdown"];
     while let Some(result) = filtered.next().await {
         let msg = result.unwrap();
         assert!(expected_subtypes.contains(&msg.subtype.as_str()));
@@ -329,7 +329,7 @@ async fn test_filter_with_all_matching_messages() {
     let mut filtered = Box::pin(filtered);
 
     let mut count = 0;
-    while let Some(_) = filtered.next().await {
+    while (filtered.next().await).is_some() {
         count += 1;
     }
     assert_eq!(count, 3);
@@ -391,7 +391,7 @@ async fn test_multiple_filters_independently() {
     let mut assistant_filtered = Box::pin(filtered);
 
     let mut asst_count = 0;
-    while let Some(_) = assistant_filtered.next().await {
+    while (assistant_filtered.next().await).is_some() {
         asst_count += 1;
     }
     assert_eq!(asst_count, 2);
@@ -414,7 +414,7 @@ async fn test_multiple_filters_independently() {
     let mut user_filtered = Box::pin(filtered);
 
     let mut user_count = 0;
-    while let Some(_) = user_filtered.next().await {
+    while (user_filtered.next().await).is_some() {
         user_count += 1;
     }
     assert_eq!(user_count, 2);

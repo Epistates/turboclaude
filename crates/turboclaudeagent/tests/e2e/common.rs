@@ -110,10 +110,8 @@ where
     let mut stream = Box::pin(session.receive_messages().await);
 
     while let Some(result) = stream.next().await {
-        if let Ok(message) = result {
-            if predicate(&message) {
-                return true;
-            }
+        if let Ok(message) = result && predicate(&message) {
+            return true;
         }
     }
     false

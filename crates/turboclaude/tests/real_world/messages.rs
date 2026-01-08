@@ -79,7 +79,7 @@ async fn real_world_messages_conversation() -> Result<(), Box<dyn std::error::Er
                 .max_tokens(100u32)
                 .messages(vec![
                     Message::user("My name is Alice."),
-                    Message::assistant(&msg1.text()),
+                    Message::assistant(msg1.text()),
                     Message::user("What is my name?"),
                 ])
                 .build()?,

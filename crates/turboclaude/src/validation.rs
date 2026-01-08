@@ -403,6 +403,33 @@ fn validate_content_block(
                 )));
             }
         }
+
+        ContentBlockParam::ToolReference { tool_name, .. } => {
+            if tool_name.is_empty() {
+                return Err(Error::InvalidRequest(format!(
+                    "Tool name is empty in tool reference at message {} block {}",
+                    message_index, block_index
+                )));
+            }
+        }
+
+        ContentBlockParam::ToolSearchToolResult { tool_use_id, .. } => {
+            if tool_use_id.is_empty() {
+                return Err(Error::InvalidRequest(format!(
+                    "Tool use ID is empty in tool search result at message {} block {}",
+                    message_index, block_index
+                )));
+            }
+        }
+
+        ContentBlockParam::McpToolResult { tool_use_id, .. } => {
+            if tool_use_id.is_empty() {
+                return Err(Error::InvalidRequest(format!(
+                    "Tool use ID is empty in MCP tool result at message {} block {}",
+                    message_index, block_index
+                )));
+            }
+        }
     }
 
     Ok(())

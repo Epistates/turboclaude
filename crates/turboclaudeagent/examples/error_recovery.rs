@@ -117,21 +117,18 @@ async fn demonstrate_manual_handling() {
 
     let transport_error = AgentError::Transport("connection lost".to_string());
 
-    match &transport_error {
-        AgentError::Transport(_) => {
-            println!("Got Transport Error");
-            println!(
-                "  Retriable: {} → Should retry",
-                transport_error.is_retriable()
-            );
-            println!(
-                "  Max attempts: {}",
-                transport_error.max_retries().unwrap_or(0)
-            );
-            println!("  User guidance: {}", transport_error.suggested_action());
-            println!("\n  Action: Session will auto-reconnect on next query");
-        }
-        _ => {}
+    if let AgentError::Transport(_) = &transport_error {
+        println!("Got Transport Error");
+        println!(
+            "  Retriable: {} → Should retry",
+            transport_error.is_retriable()
+        );
+        println!(
+            "  Max attempts: {}",
+            transport_error.max_retries().unwrap_or(0)
+        );
+        println!("  User guidance: {}", transport_error.suggested_action());
+        println!("\n  Action: Session will auto-reconnect on next query");
     }
 
     println!("\nPattern: Non-retriable error handling\n");

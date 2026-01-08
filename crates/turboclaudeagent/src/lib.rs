@@ -79,7 +79,7 @@ pub mod retry;
 // Re-export commonly used types
 pub use agent::AgentDefinition;
 pub use client::ClaudeAgentClient;
-pub use config::{ClaudeAgentClientConfig, SessionConfig};
+pub use config::{ClaudeAgentClientConfig, SessionConfig, ToolsOption, ToolsPreset};
 pub use error::{AgentError, BackoffStrategy, ErrorRecovery, Result};
 pub use hooks::HookRegistry;
 pub use lifecycle::{SessionEvent, SessionGuard};
@@ -90,6 +90,11 @@ pub use retry::{retry, retry_with_recovery};
 pub use routing::MessageRouter;
 pub use sandbox::{SandboxIgnoreViolations, SandboxNetworkConfig, SandboxSettings};
 pub use session::{AgentSession, QueryBuilder, SessionState};
+
+// Re-export beta types from turboclaude for convenience
+pub use turboclaude::types::beta::{
+    CompactionControl, CompactionResult, CompactionSummary, OutputConfig, OutputEffort,
+};
 
 #[cfg(feature = "skills")]
 pub use skills::{ActiveSkill, SkillDiscoveryResult, SkillManager, ToolValidationResult};
